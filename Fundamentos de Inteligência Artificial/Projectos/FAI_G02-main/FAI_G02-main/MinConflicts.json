@@ -1,0 +1,92 @@
+{
+    "D1_T": {
+        "Slot": 2,
+        "Teacher": "Teacher1",
+        "Classroom": "room1"
+    },
+    "D1_TP": {
+        "Slot": 6,
+        "Teacher": "Teacher1",
+        "Classroom": "lab2"
+    },
+    "D2_T": {
+        "Slot": 12,
+        "Teacher": "Teacher2",
+        "Classroom": "room2"
+    },
+    "D2_TP": {
+        "Slot": 15,
+        "Teacher": "Teacher2",
+        "Classroom": "lab1"
+    },
+    "D3": {
+        "Slot": 7,
+        "Teacher": "Teacher3",
+        "Classroom": "room1"
+    },
+    "D4_T": {
+        "Slot": 10,
+        "Teacher": "Teacher3",
+        "Classroom": "room2"
+    },
+    "D4_TP": {
+        "Slot": 14,
+        "Teacher": "Teacher4",
+        "Classroom": "lab1"
+    },
+    "D5_T": {
+        "Slot": 4,
+        "Teacher": "Teacher2",
+        "Classroom": "room1"
+    },
+    "D5_TP": {
+        "Slot": 9,
+        "Teacher": "Teacher3",
+        "Classroom": "lab1"
+    },
+    "D6_T": {
+        "Slot": 8,
+        "Teacher": "Teacher4",
+        "Classroom": "room2"
+    },
+    "D6_TP": {
+        "Slot": 4,
+        "Teacher": "Teacher4",
+        "Classroom": "lab2"
+    },
+    "D7": {
+        "Slot": 5,
+        "Teacher": "Teacher1",
+        "Classroom": "room2"
+    },
+    "D8_T": {
+        "Slot": 14,
+        "Teacher": "Teacher5",
+        "Classroom": "room1"
+    },
+    "D8_TP": {
+        "Slot": 2,
+        "Teacher": "Teacher5",
+        "Classroom": "lab2"
+    },
+    "D9_T": {
+        "Slot": 13,
+        "Teacher": "Teacher4",
+        "Classroom": "room3"
+    },
+    "D9_TP": {
+        "Slot": 3,
+        "Teacher": "Teacher5",
+        "Classroom": "room3"
+    },
+    "D10_T": {
+        "Slot": 16,
+        "Teacher": "Teacher4",
+        "Classroom": "room3"
+    },
+    "D10_TP": {
+        "Slot": 7,
+        "Teacher": "Teacher5",
+        "Classroom": "room3"
+    }
+}
