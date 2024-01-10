@@ -2,6 +2,25 @@
 
 Welcome to the repository for the Master's Degree in Applied Artificial Intelligence. This repository contains a comprehensive collection of resources, notes, projects, and materials related to the Applied AI program. Whether you are a student, researcher, or AI enthusiast, you'll find valuable information and materials here.
 
+## Master's in Applied Artificial Intelligence Curriculum
+
+### Year 1
+#### Semester 1
+- **Foundations of Mathematics for Artificial Intelligence (MIAA)**
+- **Fundamentos de Inteligência Artificial (MIAA)**
+- **Machine Learning Algorithms (MIAA)**
+- **Statistical Models for AI (MIAA)**
+- **Computational Tools for Data Science (MIAA)**
+
+#### Semester 2
+- **Courses**
+- **Courses**
+- **Courses**
+- **Courses**
+- **Courses**
+- **Courses**
+
+
 ## Contents
 
 This repository is organized into various sections to help you navigate and access the relevant content:
