@@ -1,4 +1,4 @@
-# Master's Degree in Applied Artificial Intelligence
+# Master's Degree in Applied Artificial Intelligence (MIAA)
 
 Welcome to the repository for the Master's Degree in Applied Artificial Intelligence. This repository contains a comprehensive collection of resources, notes, projects, and materials related to the Applied AI program. Whether you are a student, researcher, or AI enthusiast, you'll find valuable information and materials here.
 
@@ -15,7 +15,13 @@ Welcome to the repository for the Master's Degree in Applied Artificial Intellig
 
 
 #### Semester 2
-- *Course titles to be announced, Coming Soon*
+- [Ethics of AI (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Ética%20da%20IA)
+- [Deep Learning for Computer Vision (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Aprendizagem%20Profunda%20para%20a%20visão%20por%20computador)
+- [High Performance Computing (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Computação%20de%20alto%20desempenho)
+- [Embedded AI Systems (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Sistemas%20Embebidos%20para%20IA)
+- [Natural Language Processing (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Processamento%20de%20Linguagem%20Natural)
+- [Research Methods for AI (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Métodos%20de%20Pesquisa%20para%20IA)
+
 
 ### Year 2
 
