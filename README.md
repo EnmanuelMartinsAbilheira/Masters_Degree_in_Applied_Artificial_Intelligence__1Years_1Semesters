@@ -5,20 +5,27 @@ Welcome to the repository for the Master's Degree in Applied Artificial Intellig
 ## Master's in Applied Artificial Intelligence Curriculum
 
 ### Year 1
+
 #### Semester 1
-- **Foundations of Mathematics for Artificial Intelligence (MIAA)**
-- **Fundamentos de Inteligência Artificial (MIAA)**
-- **Machine Learning Algorithms (MIAA)**
-- **Statistical Models for AI (MIAA)**
-- **Computational Tools for Data Science (MIAA)**
+#### Semester 1
+- [Foundations of Mathematics for Artificial Intelligence (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Fundamentos%20de%20matemática%20para%20a%20inteligência%20artificial)
+- [Fundamentos de Inteligência Artificial (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Fundamentos%20de%20Inteligência%20Artificial)
+- [Machine Learning Algorithms (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Algoritmos%20de%20aprendizagem%20máquina)
+- [Statistical Models for AI (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Modelos%20Estatísticos%20para%20IA)
+- [Computational Tools for Data Science (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Ferramentas%20Computacionais%20para%20ciência%20dos%20dados)
+
 
 #### Semester 2
-- **Courses**
-- **Courses**
-- **Courses**
-- **Courses**
-- **Courses**
-- **Courses**
+- *Course titles to be announced, Coming Soon*
+
+### Year 2
+
+#### Semester 1
+- *Course titles to be announced, Coming Soon*
+
+#### Semester 2
+- *Course titles to be announced, Coming Soon*
+
 
 
 ## Contents
