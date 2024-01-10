@@ -7,7 +7,6 @@ Welcome to the repository for the Master's Degree in Applied Artificial Intellig
 ### Year 1
 
 #### Semester 1
-#### Semester 1
 - [Foundations of Mathematics for Artificial Intelligence (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Fundamentos%20de%20matemática%20para%20a%20inteligência%20artificial)
 - [Fundamentos de Inteligência Artificial (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Fundamentos%20de%20Inteligência%20Artificial)
 - [Machine Learning Algorithms (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Algoritmos%20de%20aprendizagem%20máquina)
