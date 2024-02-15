@@ -1,0 +1,68 @@
+% The mip module requires 
+% Gurobi (http://www.gurobi.com/), 
+% Cbc (https://github.com/coin-or/Cbc), 
+% GLPK (https://www.gnu.org/software/glpk/). 
+
+% The smt module requires 
+% Z3 (https://github.com/Z3Prover/z3/) or 
+% CVC4 (https://cvc4.github.io/). 
+
+
+
+%import smt.
+import mip.
+import data.
+import util.
+
+main(S) =>
+ %M = data(),
+ Reader = open(head(S)),
+ F = read_term(Reader),
+ D = F[1],					% Array with ordered devices description
+ M = F[2],					% Devices/Resident interaction array
+ N = length(M), 		   		% N: resident interaction size
+
+ TMAX = to_int(S[2]),
+ printf("----------------------------------------------%w",TMAX),
+
+ ResidentIndex = new_array(N),                        % ResidentIndex: array with odd integer values (indexes)
+ ResidentIndex :: 1..N,
+ Resident = new_array(N),                             % Resident: array with resident indexes in M
+ Resident :: 1..4,
+ Actions = new_array(N),				      % Action: array with resident actions (0-off / 1-on)
+ Actions :: 0..30,
+ Units = new_array(N),                                % Units: array with required units for each action
+ Units :: 0..10,
+ StartTime = new_array(N),                            % StartTime: array with action start time
+ StartTime :: 1..TMAX,                                  %   Period time
+ EndTime = new_array(N),                              % EndTime: array with action end time
+ EndTime :: 1..TMAX,                                    %   Period time
+ foreach (I in 1..N)                                  % Var I receives sequencially each devices ID
+ 	ResidentIndex[I] mod 3 #= 0,                  % ResidentIndex[I] <- M column indexes greater or equal to 3
+	ResidentIndex[I] #>=3,                        %                
+	element(ResidentIndex[I],M[I],Resident[I]),   % Resident[I] <- ResidentID element(I,L,V) “V=L[I]”. 
+	Units_Index #= ResidentIndex[I]+1,            % Units_Index <- units index
+        element(Units_Index,M[I],Units[I]),           % Units[i] <- action units
+	Action_Index #= ResidentIndex[I]+2,           % Action_Index <- action index 
+        element(Action_Index,M[I],Actions[I]),        % Actions[i] <- value action
+	EndTime[I] #= StartTime[I]+Units[I]-1,        % Action start time plus duration equals action end time 
+	foreach (J in (I+1)..N)                       
+	  (Resident[I] #= Resident[J]) #=> ((EndTime[I] #< StartTime[J]) #\/ (EndTime[J] #< StartTime[I])),  % Each resident does on action at a time 
+ 	  (M[I,1] #= M[J,1]) #=> (EndTime[I] #< StartTime[J])   % Same device with disjoint action units,
+	end
+ end,
+
+% Implemented validations
+
+% Rules to verify
+
+solve([gurobi], [Resident,Actions,Units,StartTime,EndTime]), % Conflict detection
+ %solve([$threads(8)], [Resident,Units,StartTime,EndTime]),
+ %solve([cbc], [Resident,Units,StartTime,EndTime]),
+ %solve([z3], [Resident,Units,StartTime,EndTime]),
+
+
+ OutputFile = open("solution.csv",write),
+ writef(OutputFile,"%s\n","Item,Devices,Id,Residents,Start,End"),
+ foreach (I in 1..N) 
+   writef(OutputFile,"%w,%w%w_%w,%w,%w,%w,%w\n",I, D[M[I,1]],M[I,1],Actions[I],I,Resident[I],StartTime[I]-1,EndTime[I]) end.
