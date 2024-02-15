@@ -1,0 +1,47 @@
+% The mip module requires 
+% Gurobi (http://www.gurobi.com/), 
+% Cbc (https://github.com/coin-or/Cbc), 
+% GLPK (https://www.gnu.org/software/glpk/). 
+
+% The smt module requires 
+% Z3 (https://github.com/Z3Prover/z3/) or 
+% CVC4 (https://cvc4.github.io/). 
+
+
+
+%import smt.
+import mip.
+import data.
+import util.
+
+main(S) =>
+ %M = data(),
+ TMAX = to_int(S[2]), 
+ Reader = open(head(S)),
+ M = read_term(Reader),
+ N = length(M), 		   % N: quantidade de operações
+ NextMaquina = new_array(N),       % NextMaquina: valores inteiros impares
+ Maquina = new_array(N),           % Maquina: máquina atribuída
+ Unidades = new_array(N),          % Unidades: unidades necessárias
+ TempoInicio = new_array(N),       % TempoInicio: tempo de início da operação
+ TempoInicio :: 1..TMAX,
+ TempoFim = new_array(N),          % TempoFim: tempo de término da operação
+ TempoFim :: 1..TMAX,
+ foreach (I in 1..N)
+ 	NextMaquina[I] mod 2 #= 1, NextMaquina[I] #>=3,                                            
+	element(NextMaquina[I],M[I],Maquina[I]),                               
+	X #= NextMaquina[I]+1,
+        element(X,M[I],Unidades[I]),                 
+        Maquina[I] #!= 0,    Unidades[I] #!= 0, 
+	TempoFim[I] #= TempoInicio[I]+Unidades[I]-1, 
+	foreach (J in (I+1)..N) (Maquina[I] #= Maquina[J]) #=> ((TempoFim[I] #< TempoInicio[J]) #\/ (TempoFim[J] #< TempoInicio[I])) end
+ end,
+ foreach (I in 2..N) (M[I-1,1] #= M[I,1]) #=>  (TempoFim[I-1] #< TempoInicio[I]) end, 
+ solve([gurobi], [Maquina,Unidades,TempoInicio,TempoFim]),
+ %solve([$threads(8)], [Maquina,Unidades,TempoInicio,TempoFim]),
+ %solve([cbc], [Maquina,Unidades,TempoInicio,TempoFim]),
+ %solve([z3], [Maquina,Unidades,TempoInicio,TempoFim]),
+ OutputFile = open("gantt4.csv",write),
+ writef(OutputFile,"%s\n","Item,Operation,Id,Machine,Start,End"),
+ foreach (I in 1..N) 
+   writef(OutputFile,"%w,Job%w,%w,%w,%w,%w\n",I, M[I,1],I,Maquina[I],TempoInicio[I]-1,TempoFim[I]) end.
