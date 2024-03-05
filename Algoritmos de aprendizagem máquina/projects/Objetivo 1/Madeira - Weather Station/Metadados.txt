@@ -1,0 +1,19 @@
+
+
+Air Temperature (F)
+Dew Point Temperature (F)
+Wind Speed (knots)
+Wind direction
+5 secs gust WInd Direction 
+5 secs gust WInd Speed (knots)
+Visibility 1 Coefficient
+Visibility 1 Night/Day
+Visibility 2 Coefficient
+Visibility 2 Night/Day
+Visibility 3 Coefficient
+Visibility 3 Night/Day
+Precip Type Code
+1 minute precip (inches)
+Sensor 1 Station Pressure (inches)
+Sensor 2 Station Pressure (inches)
+Sensor 3 Station Pressure (inches)
