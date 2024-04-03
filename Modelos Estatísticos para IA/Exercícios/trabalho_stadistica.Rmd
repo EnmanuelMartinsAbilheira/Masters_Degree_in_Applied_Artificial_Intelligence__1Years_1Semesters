@@ -1,0 +1,366 @@
+
+---
+title: "R Notebook Stadistic"
+output:
+  html_notebook: default
+  word_document: default
+---
+
+
+Alumns: Pedro Ferreira A17029, Daniel Fernandes A17014, Enmanuel Martins A16430
+
+```{r}
+setwd("~/Rproject")
+library(readr)
+library(ROCR)
+library(plotly)
+
+#this library is to implement a generalized linear model (GLM)
+library(dplyr)
+library(tidyr)
+
+#this library is to implement a logistoic regresion
+library(glmnet)
+library(caTools)
+
+library(ggplot2)
+library(ggcorrplot) 
+library(caret)
+
+library(GGally)
+library(reshape2)
+library(corrplot)
+library(cluster)
+
+
+
+```
+
+
+```{r}
+data_cancer <- read.csv('./data.csv')
+```
+
+
+```{r}
+head(data_cancer)
+
+```
+
+
+```{r}
+# Remove the 'id' column and the 'X' column
+data_cancer <- data_cancer[, -1]  # Remove 'id' column
+data_cancer <- data_cancer[, -ncol(data_cancer)]  # Remove last column (assuming it's 'X')
+
+
+```
+
+```{r}
+head(data_cancer)
+```
+
+```{r}
+str(data_cancer)
+```
+
+```{r}
+summary(data_cancer)
+```
+
+
+
+```{r}
+# Data Preprocessing
+data_cancer$diagnosis <- ifelse(data_cancer$diagnosis == "M", 1, 0)
+
+```
+
+
+```{r}
+# Define the variables for which you want to visualize the distributions
+variables <- c("radius_mean", "texture_mean", "perimeter_mean", "area_mean", 
+               "smoothness_mean", "compactness_mean", "concavity_mean", 
+               "concave.points_mean", "symmetry_mean", "fractal_dimension_mean")
+
+# Create a long format dataframe for ggplot
+data_long <- gather(data_cancer, key = "Variable", value = "Value", all_of(variables))
+
+# Plot histograms for each variable using facet_wrap
+ggplot(data_long, aes(x = Value, fill = Variable)) +
+  geom_histogram(binwidth = 0.5, color = "black") +
+  facet_wrap(~ Variable, scales = "free") +
+  theme_minimal() +
+  labs(title = "Distribution of Variables", x = "Value", y = "Count")
+
+```
+
+
+```{r}
+data_cancer <- data_cancer %>% relocate(diagnosis,.after= fractal_dimension_worst)
+
+r <- cor(data_cancer[,0:31])
+
+round(r,2)
+
+ggcorrplot(r)
+```
+
+```{r}
+ggcorrplot(r, hc.order = TRUE, type = "lower",
+           outline.col = "white",
+           ggtheme = ggplot2::theme_gray,
+           colors = c("#6D9EC1", "white", "#E46726"))
+
+```
+
+
+
+```{r}
+sapply(data_cancer,function(x)sum(is.na(x)))
+
+```
+
+
+```{r}
+# Visualizing Distributions of Individual Variables
+# Histograms
+
+ggplot(data_cancer, aes(x = radius_mean)) +
+  geom_histogram(binwidth = 0.5, fill = "lightblue", color = "black") +
+  theme_minimal() +
+  labs(title = "Distribution of Size", x = "radius_mean", y = "Count")
+
+```
+
+```{r}
+# Density plots
+ggplot(data_cancer, aes(x = radius_mean)) +
+  geom_density(fill = "lightblue") +
+  labs(title = "Density of Radius_Mean", x = "Radiues_Mean")
+
+```
+
+```{r}
+# Pair Plots
+ggpairs(data_cancer[, c("diagnosis", "radius_mean", "texture_mean", "perimeter_mean", "area_mean", "smoothness_mean", "compactness_mean", "concavity_mean", "concave.points_mean", "symmetry_mean", "fractal_dimension_mean")])
+
+#, "radius_se","texture_se", "perimeter_se","area_se", "smoothness_se", "compactness_se", "concavity_se", "concave.points_se", "symmetry_se", "fractal_dimension_se", "radius_worst", "texture_worst", "perimeter_worst", "area_worst", "smoothness_worst", "compactness_worst", "concavity_worst", "concave.points_worst", "symmetry_worst", "fractal_dimension_worst"
+```
+
+
+```{r}
+data_cancer
+```
+
+
+```{r}
+# Data Splitting
+set.seed(123)  # for reproducibility
+split <- sample.split(data_cancer$diagnosis, SplitRatio = 0.7)
+train_data <- subset(data_cancer, split == TRUE)
+test_data <- subset(data_cancer, split == FALSE)
+
+```
+
+
+```{r}
+# Model Training
+model <- glm(diagnosis ~ ., data = train_data, family = binomial)
+
+```
+
+```{r}
+# Model Summary
+summary(model)
+```
+
+```{r}
+# Model Coefficients
+coefficients <- coef(model)
+print(coefficients)
+```
+
+
+
+```{r}
+# Predicted classes
+predicted_probabilities <- predict(model, newdata = test_data, type = "response")
+predicted_classes <- ifelse(predicted_probabilities > 0.5, 1, 0)
+```
+
+```{r}
+# Confusion Matrix
+conf_matrix <- table(predicted_classes, test_data$diagnosis)
+print(conf_matrix)
+```
+
+
+```{r}
+# Calculate accuracy
+accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+cat("Accuracy:", accuracy, "\n")
+```
+
+
+```{r}
+# Predicted probabilities on training data
+predicted_probabilities_train <- predict(model, newdata = train_data, type = "response")
+
+# Create a dataframe for plotting
+plot_data <- data.frame(radius_mean = train_data$radius_mean, 
+                        predicted_probabilities = predicted_probabilities_train)
+
+```
+
+
+```{r}
+# Plot the logistic regression curve
+ggplot(plot_data, aes(x = radius_mean, y = predicted_probabilities)) +
+  geom_point(aes(color = as.factor(train_data$diagnosis))) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE) +
+  labs(x = "Radius Mean", y = "Predicted Probability", color = "Diagnosis") +
+  ggtitle("Logistic Regression Curve")
+```
+
+
+# clustering models
+```{r}
+# Selecting only numerical columns for clustering
+data_for_clustering <- data_cancer[, -1]  # Exclude the diagnosis column
+
+```
+
+
+```{r}
+# Scale the data
+scaled_data <- scale(data_for_clustering)
+
+```
+
+
+```{r}
+# Find optimal number of clusters using the elbow method
+wss <- numeric(10)
+for (i in 1:10) {
+  wss[i] <- sum(kmeans(scaled_data, centers = i)$withinss)
+}
+plot(1:10, wss, type = "b", xlab = "Number of Clusters",
+     ylab = "Within Sum of Squares (WSS)",
+     main = "Elbow Method to Find Optimal Number of Clusters")
+
+# From the plot, determine the optimal number of clusters (elbow point)
+
+
+```
+
+
+```{r}
+# Run k-means clustering with the chosen number of clusters
+k <- 2 # 2 number of clusters because the True and False results of Breast Cancer
+kmeans_result <- kmeans(scaled_data, centers = k)
+
+```
+
+
+```{r}
+
+# Add cluster labels to the original dataset
+data_cancer$cluster <- as.factor(kmeans_result$cluster)
+```
+
+
+```{r}
+# Visualize the clustering results
+ggplot(data_cancer, aes(x = radius_mean, y = texture_mean, color = cluster)) +
+  geom_point() +
+  labs(x = "Radius Mean", y = "Texture Mean", color = "Cluster") +
+  ggtitle("K-means Clustering of Breast Cancer Data")
+```
+
+
+
+
+multiple variables plot kmeans clustering 
+
+
+```{r}
+# List of variables to use for clustering
+variables <- c("radius_mean", "texture_mean", "perimeter_mean", "area_mean", 
+               "smoothness_mean", "compactness_mean", "concavity_mean", 
+               "concave.points_mean", "symmetry_mean", "fractal_dimension_mean")
+```
+
+
+```{r}
+# Loop over each variable and create a separate plot for k-means clustering
+for (variable in variables) {
+  # Create plot title
+  plot_title <- paste("K-means Clustering of Breast Cancer Data (", variable, ")", sep = "")
+  
+  # Create plot
+  plot <- ggplot(data_cancer, aes_string(x = variable, y = "texture_mean", color = "cluster")) +
+    geom_point() +
+    labs(x = variable, y = "Texture Mean", color = "Cluster", title = plot_title)
+  
+  # Print the plot
+  print(plot)
+}
+
+
+```
+
+
+
+
+multiple variables logistic regresion
+
+```{r}
+# List of variables to use for clustering
+variables <- c("radius_mean", "texture_mean", "perimeter_mean", "area_mean", 
+               "smoothness_mean", "compactness_mean", "concavity_mean", 
+               "concave.points_mean", "symmetry_mean", "fractal_dimension_mean")
+```
+
+
+```{r}
+# Initialize an empty list to store plot dataframes
+plot_data_list <- list()
+
+# Loop over each variable and fit logistic regression models
+for (variable in variables) {
+  # Create formula for logistic regression
+  formula <- paste("diagnosis ~ ", variable)
+  
+  # Fit logistic regression model
+  model <- glm(formula, data = train_data, family = binomial)
+  
+  # Predict probabilities on training data
+  predicted_probabilities_train <- predict(model, newdata = train_data, type = "response")
+  
+  # Create dataframe for plotting
+  plot_data <- data.frame(variable = train_data[[variable]], 
+                          predicted_probabilities = predicted_probabilities_train)
+  
+  # Store plot data
+  plot_data_list[[variable]] <- plot_data
+}
+
+# Plot the logistic regression curves for each variable
+for (variable in variables) {
+  plot <- ggplot(plot_data_list[[variable]], aes(x = variable, y = predicted_probabilities)) +
+    geom_point(aes(color = as.factor(train_data$diagnosis))) +
+    geom_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE) +
+    labs(x = variable, y = "Predicted Probability", color = "Diagnosis") +
+    ggtitle(paste("Logistic Regression Curve for", variable))
+  
+  # Print the plot
+  print(plot)
+}
+
+
+```
+
+
+
+
