@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Penalties{% endblock %}
+
+{% block styles %}
+<style>
+    h1 {
+        text-align: center;
+        color: #429bf5;
+        padding-top: 80px;
+        padding-bottom: 40px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <h1>Edit Penalties Weights</h1>
+    <!-- Display flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul class="flashes">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('edit_penalties') }}" class="mt-4" onsubmit="return validateForm()">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="dispersion_different_days" class="font-weight-bold">Dispersion Different Days:</label>
+                    <input type="text" name="dispersion_different_days" class="form-control" value="{{ penalties.dispersion_different_days }}" required step="any" min="0.0">
+                </div>
+            </div>
+    
+        </div>
+    
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="gaps_in_a_day" class="font-weight-bold">Gaps in a Day:</label>
+                    <input type="text" name="gaps_in_a_day" class="form-control" value="{{ penalties.gaps_in_a_day }}" required step="any" min="0.0">
+                </div>
+            </div>
+    
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="gaps_between_days" class="font-weight-bold">Gaps Between Days:</label>
+                    <input type="text" name="gaps_between_days" class="form-control" value="{{ penalties.gaps_between_days }}" required step="any" min="0.0">
+                </div>
+            </div>
+        </div>
+    
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+    </form>
+    
+    <div class="d-flex justify-content-end">
+        <a href="{{ url_for('home') }}" class="btn btn-success mt-3 float-right mb-3">Back to Home</a>
+    </div>
+    
+    <script>
+        function validateForm() {
+            var dispersion_different_days = parseFloat(document.getElementsByName('dispersion_different_days')[0].value);
+            var gaps_in_a_day = parseFloat(document.getElementsByName('gaps_in_a_day')[0].value);
+            var gaps_between_days = parseFloat(document.getElementsByName('gaps_between_days')[0].value);
+            
+            if (dispersion_different_days < 0 || gaps_in_a_day < 0 || gaps_between_days < 0) {
+                alert("Please enter non-negative values for all fields.");
+                return false;
+            }
+            
+            return true;
+        }
+    </script>
+    
+{% endblock %}

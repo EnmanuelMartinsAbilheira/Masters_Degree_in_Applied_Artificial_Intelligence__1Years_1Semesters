@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}View Penalties{% endblock %}
+
+{% block styles %}
+<style>
+    h1 {
+        text-align: center;
+        color: #429bf5;
+        padding-top: 80px;
+        padding-bottom: 40px;
+    }
+
+    .lead{
+        color: #254f74;
+        font-weight: 400;
+    }
+
+    .card-body p {
+        color: #254f74;
+        font-weight: 600; 
+    }
+    
+    th, td {
+    padding: 8px;
+    }
+
+    .card-body {
+        background-color:  #eaf4f5; 
+    }
+
+    .card-header{
+        background-color:  #eaf4f5;
+        color: #429bf5;
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+    <h1>Penalties Weights</h1>
+    <!-- Display flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul class="flashes">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Dispersion Different Days</th>
+                <th scope="col">Gaps in a Day</th>
+                <th scope="col">Gaps Between Days</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ penalties.dispersion_different_days }}</td>
+                <td>{{ penalties.gaps_in_a_day }}</td>
+                <td>{{ penalties.gaps_between_days }}</td>
+                <td>
+                    <a href="{{ url_for('edit_penalties') }}" class="btn btn-primary">Edit</a>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <!-- Description of fields -->
+    <div class="container mt-4">
+        <div class="card">
+            <div class="card-header">
+                <strong>Description of the Fields</strong>
+            </div>
+            <div class="card-body">
+                <p>The penalties weights are applied to each Course:</p>
+                <ul>
+                    <li><strong style="color: #254f74;">Dispersion Different Days:</strong> Penaltie weight for dispersion of classes across different days.</li>
+                    <ul>
+                        <li><strong>Purpose:</strong> Minimize the number of days of classes (attempts to schedule classes on as few days as possible).</li>   
+                    </ul>
+                    <li><strong style="color: #254f74;">Gaps in a Day:</strong> Penaltie weight for gaps in the schedule within the same day.</li>
+                    <ul>
+                        <li><strong>Purpose:</strong> Minimize the gaps of classes in a day (attempts to schedule classes closer together on the same day).</li>   
+                    </ul>
+                    <li><strong style="color: #254f74;">Gaps Between Days:</strong> Penaltie weight for gaps between consecutive days in the schedule.</li>
+                    <ul>
+                        <li><strong>Purpose:</strong> Maximize the number of consecutive days with classes (attempts to schedule classes on consecutive days).</li>   
+                    </ul>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end">
+        <a href="{{ url_for('home') }}" class="btn btn-success mt-3 float-right mb-3">Back to Home</a>
+    </div>
+{% endblock %}

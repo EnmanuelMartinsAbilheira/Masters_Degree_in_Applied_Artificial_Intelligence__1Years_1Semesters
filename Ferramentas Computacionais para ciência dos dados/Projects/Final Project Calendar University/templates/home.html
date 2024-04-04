@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+{% block styles %}
+<style>
+    h1 {
+        color: #429bf5;
+        padding-top: 60px;
+    }
+    h2 {
+        color: #429bf5;
+    }
+    .lead{
+        color: #254f74;
+        font-weight: 400;
+    }
+    .card-body p {
+        color: #254f74;
+        font-weight: 600; 
+    }
+    
+    .card-body {
+        background-color:  #eaf4f5; 
+    }
+
+    .card-header{
+        background-color:  #eaf4f5; 
+    }
+
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mt-3">
+    <h1>Welcome to the Schedule Creator App</h1>
+    <p class="lead">This web app allows you to create schedules for classes.<br>
+        To use the solver you need to have some essential data.</p>
+ 
+    <div class="card mt-3">
+        <div class="card-header">
+            <h2>Database Info:</h2>
+        </div>
+        <div class="card-body">
+            <p>Number of Courses: {{ course_count }}</p>
+            <p>Number of Classrooms: {{ classroom_count }}</p>
+            <p>Number of Classroom Unavailability Slots: {{ classroom_unavailability_count}}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

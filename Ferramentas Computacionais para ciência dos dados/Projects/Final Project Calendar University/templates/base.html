@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Title{% endblock %}</title>
+
+    <!-- Bootstrap CSS CDN -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    
+    <!-- Custom Styles -->
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #ddf0f1; 
+        }
+
+        .container{
+            padding-top: 30px;
+        }
+
+        .navbar-fixed {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000; 
+        }
+
+        .navbar-dark .navbar-brand{
+            color: #77a2eb;
+        } 
+
+        .navbar-dark .navbar-nav .nav-header{
+            font-weight: bold; 
+            color: #d2dbeb; 
+        }
+
+    </style>
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Home</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link nav-header" href="{{ url_for('solve') }}">Solve</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-header" href="{{ url_for('get_classes') }}">Courses</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-header" href="{{ url_for('view_general_data') }}">Courses Parameters</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-header" href="{{ url_for('view_penalties') }}">Penalties</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-header" href="{{ url_for('classrooms') }}">Classrooms</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-header" href="{{ url_for('classroom_unavailability') }}">Classrooms Unavailabilities</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-header" href="{{ url_for('teachers_subjects') }}">Teachers</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-header" href="{{ url_for('display_schedules') }}">Display Schedules</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Bootstrap JS and Popper.js CDN -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

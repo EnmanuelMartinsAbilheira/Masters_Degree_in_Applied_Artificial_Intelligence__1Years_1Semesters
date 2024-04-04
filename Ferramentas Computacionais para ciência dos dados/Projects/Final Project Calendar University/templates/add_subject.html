@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Add Subject{% endblock %}
+{% block styles %}
+<style>
+    h1 {
+        text-align: center;
+        color: #429bf5;
+        padding-top: 80px;
+        padding-bottom: 40px;
+    }
+    .form-control-label {
+        font-weight: bold;
+    }
+    .bottom-margin {
+        margin-bottom: 20px; 
+    }
+    form {
+        background-color: #ddf0f1; 
+    }
+
+    .card-body {
+        background-color: #ddf0f1; 
+    }
+</style>
+{% endblock %}
+{% block content %}
+  <div class="container mt-4">
+    <h1>Add Subject</h1>
+
+    <form method="POST" action="{{ url_for('add_subject', course_name=course_name) }}">
+      {{ form.hidden_tag() }}
+  
+      <div class="card mb-3">
+          <div class="card-body">
+              <div class="form-row">
+                  <div class="form-group col-md-6">
+                      <label class="form-control-label">Subject Name:</label>
+                      {{ form.sub_name(class="form-control", required="required") }}
+                  </div>
+                  <div class="form-group col-md-6">
+                      <label class="form-control-label">Teacher:</label>
+                      {{ form.teacher(class="form-control", required="required") }}
+                  </div>
+              </div>
+              <div class="form-row">
+                  <div class="form-group col-md-6">
+                      <label class="form-control-label">Enrolled Students:</label>
+                      {{ form.enrolled_students(class="form-control", required="required") }}
+                  </div>
+                  <div class="form-group col-md-6">
+                      <label class="form-control-label">Min Days of Classes:</label>
+                      {{ form.min_days_classes(class="form-control", required="required") }}
+                  </div>
+              </div>
+              <div class="form-row">
+                  <div class="form-group col-md-6">
+                      <label class="form-control-label">Max Days of Classes:</label>
+                      {{ form.max_days_classes(class="form-control", required="required") }}
+                  </div>
+                  <div class="form-group col-md-6">
+                      <label class="form-control-label">Min Classes per Week:</label>
+                      {{ form.min_classes_per_week(class="form-control", required="required") }}
+                  </div>
+              </div>
+              <div class="form-row">
+                  <div class="form-group col-md-6">
+                      <label class="form-control-label">Max Classes per Week:</label>
+                      {{ form.max_classes_per_week(class="form-control", required="required") }}
+                  </div>
+              </div>
+          </div>
+      </div>
+  
+      <button type="submit" class="btn btn-primary">Add Subject</button>
+  </form>
+  
+
+    <a href="{{ url_for('get_classes') }}" class="btn btn-success mt-3 float-right bottom-margin">Back to Classes</a>
+
+  </div>
+{% endblock %}

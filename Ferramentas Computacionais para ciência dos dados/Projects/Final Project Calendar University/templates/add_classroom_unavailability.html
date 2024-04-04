@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Add Classroom Unavailability{% endblock %}
+{% block styles %}
+<style>
+    h2 {
+        text-align: center; 
+        color: #429bf5; 
+        padding-top: 40px;
+        padding-bottom: 40px;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Add Classrooms Unavailability</h2>
+    <form method="POST">
+        {{ form.csrf_token }}
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label for="day" class="font-weight-bold">{{ form.day.label }}</label>
+                {{ form.day(class="form-control") }}
+            </div>
+            <div class="form-group col-md-6">
+                <label for="hour" class="font-weight-bold">{{ form.hour.label }}</label>
+                {{ form.hour(class="form-control") }}
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
+<div class="d-flex justify-content-end">
+    <a href="{{ url_for('home') }}" class="btn btn-success mt-3 float-right mb-3">Back to Home</a>
+</div>
+{% endblock %}

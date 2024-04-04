@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Display Schedules{% endblock %}
+{% block styles %}
+<style>
+    h1 {
+        text-align: center;
+        color: #429bf5;
+        padding-top: 80px;
+    }
+
+    h2 {
+        color: #429bf5;
+    }
+
+    p{
+        text-align: center;
+        margin-top: 40px;
+        font-weight: bold;
+        color: #263f5a;
+    }
+
+    table {
+        margin-top: 40px;
+        margin-bottom: 40px;
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        border: 1px solid #dddddd;
+        text-align: center;
+        padding: 8px;
+    }
+
+    th {
+        background-color: black; /* Black background color for header cells */
+        color: white; 
+    }
+
+    th:first-child {
+        background-color:  #ddf0f1; ; 
+        border-color:  #ddf0f1;
+    }
+
+    td:first-child {
+        font-weight: bold;  /* Make the values in the first column bold */
+        background-color: black;  /* Black background color for data cells in the first column */
+        color: white;  /* White text color for data cells in the first column */
+    }
+
+    td.Lunch {
+        background-color: yellow;  /* Add a yellow background color to cells with 'Lunch' */
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mt-3">
+    <h1>Schedules</h1>
+
+    {% if schedule_data %}
+        {% for class_name, schedule_html in schedule_data.items() %}
+            <h2>{{ class_name }}</h2>
+            {% if schedule_html %}
+                {{ schedule_html | safe }}
+            {% else %}
+                <p>No schedule data available for this class.</p>
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        <p>No Schedules to Display</p>
+    {% endif %}
+    <a href="{{ url_for('home') }}" class="btn btn-success mt-3 float-right mb-3">Back to Home</a>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var tables = document.querySelectorAll('table');
+
+        tables.forEach(function (table) {
+            var cells = table.querySelectorAll('td');
+
+            cells.forEach(function (cell) {
+                if (cell.innerText.trim() === 'Lunch') {
+                    cell.classList.add('Lunch');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

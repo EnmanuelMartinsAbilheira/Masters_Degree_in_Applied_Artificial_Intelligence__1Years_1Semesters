@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Classrooms{% endblock %}
+
+{% block styles %}
+<style>
+    h1 {
+        text-align: center;
+        color: #429bf5;
+        padding-top: 80px;
+        margin-top: 40px;
+    }
+
+    .container {
+        max-width: 400px; 
+        margin: 0 auto;    
+    }
+
+    form {
+        margin-top: 20px; 
+    }
+
+    .form-group {
+        margin-bottom: 15px;  
+    }
+
+    
+    .form-control {
+        width: 100%;
+    }
+
+  
+    button[type="submit"] {
+        margin: 0 auto;
+        display: block;
+    }
+    
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <h1 class="mt-3">Classrooms</h1>
+    <form method="post" class="mt-3">
+      {{ form.hidden_tag() }}
+      {{ form.csrf_token }}
+  
+      {% if form.classroom_id.data %}
+          {# If editing, render the classroom_id field as a hidden field #}
+          {{ form.classroom_id(class="form-control", type="hidden") }}
+      {% endif %}
+  
+      <div class="form-group">
+          {{ form.classroom_name.label(class="font-weight-bold") }}
+          {{ form.classroom_name(class="form-control") }}
+      </div>
+  
+      <div class="form-group">
+          {{ form.classroom_capacity.label(class="font-weight-bold") }}
+          {{ form.classroom_capacity(class="form-control") }}
+      </div>
+  
+      <button type="submit" class="btn btn-primary float-right">Submit</button>
+  </form>
+  </div>
+{% endblock %}

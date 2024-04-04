@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %} View Course Parameters{% endblock %}
+{% block styles %}
+    <style>
+        h1 {
+            text-align: center;
+            color: #429bf5;
+            padding-top: 80px;
+            padding-bottom: 40px;
+        }
+
+    </style>
+{% endblock %}
+
+{% block content %}
+  <h1>Course Parameters</h1>
+    <!-- Display flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul class="flashes">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Course Name</th>
+        <th>Min Slots per Day</th>
+        <th>Max Slots per Day</th>
+        <th>Min Days of Classes</th>
+        <th>Max Days of Classes</th>
+        <th>Max Blocks per Week</th>
+        <th>Min Classes per Period</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for data in general_data %}
+        <tr>
+          <td>{{ data.course_name }}</td>
+          <td>{{ data.min_blocks_per_day }}</td>
+          <td>{{ data.max_blocks_per_day }}</td>
+          <td>{{ data.min_days_of_classes }}</td>
+          <td>{{ data.max_days_of_classes }}</td>
+          <td>{{ data.max_blocks_per_week }}</td>
+          <td>{{ data.min_blocks_per_period }}</td>
+          <td>
+            <a href="{{ url_for('edit_general_data', id=data.id) }}" class="btn btn-warning btn-sm">Edit</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="d-flex justify-content-end">
+    <a href="{{ url_for('home') }}" class="btn btn-success mt-3 float-right mb-3">Back to Home</a>
+  </div>
+{% endblock %}

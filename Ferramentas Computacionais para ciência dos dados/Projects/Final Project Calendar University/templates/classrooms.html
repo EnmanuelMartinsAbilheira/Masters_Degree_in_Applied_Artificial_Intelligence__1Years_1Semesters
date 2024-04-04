@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Classrooms{% endblock %}
+
+{% block styles %}
+<style>
+   
+    .navbar-dark .navbar-nav .classrooms-link {
+        font-weight: bold;
+        color: #9ebdf7;
+    }
+
+    h1 {
+        text-align: center;
+        color: #429bf5;
+        padding-top: 80px;
+        padding-bottom: 30px;
+    }
+
+    table {
+        margin-top: 20px;
+    }
+
+    .btn-container {
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <h1 class="mt-3">Classrooms</h1>
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <ul class="flashes">
+        {% for message in messages %}
+        <div class="message_flash alert alert-info">{{ message }}</div>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+    <!-- Add a link to the classroom form -->
+    <div class="btn-container">
+        <a href="{{ url_for('classroom_form') }}" class="btn btn-success">Add Classroom</a>
+    </div>
+
+
+    <!-- Display classrooms in a table -->
+    <table class="table mt-3">
+        <thead>
+            <tr>
+                <th>Classroom Name</th>
+                <th>Classroom Capacity</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for classroom in classrooms %}
+                <tr>
+                    <td>{{ classroom.classroom_name }}</td>
+                    <td>{{ classroom.classroom_capacity }}</td>
+                    <td>
+                        <a href="{{ url_for('edit_classroom', classroom_id=classroom.id) }}" class="btn btn-warning btn-sm">Edit</a>
+                        <a href="{{ url_for('delete_classroom', classroom_id=classroom.id) }}" class="btn btn-danger btn-sm"
+                        onclick="return confirm('Are you sure you want to delete this classroom?')">Delete</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="d-flex justify-content-end">
+        <a href="{{ url_for('home') }}" class="btn btn-success mt-3 float-right mb-3">Back to Home</a>
+    </div>
+{% endblock %}

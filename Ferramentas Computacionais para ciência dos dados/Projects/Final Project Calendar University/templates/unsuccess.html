@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Unsuccess{% endblock %}
+{% block styles %}
+<style>
+    h1 {
+        padding-top: 80px;
+        padding-bottom: 20px;
+    }
+
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mt-3">
+    <h1>Process Completed</h1>
+    <p class="lead">Solver found the problem to be infeasible! <br>
+        Solver failed to find an optimal solution!</p>
+    <a href="{{ url_for('home') }}" class="btn btn-success mt-3">Back to Home</a>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Add Preferences{% endblock %}
+
+{% block styles %}
+<style>
+    h1 {
+        text-align: center;
+        color: #429bf5;
+        padding-top: 80px; 
+    }
+    .form-control-label {
+        font-weight: bold;
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+
+<h1 class="mt-3">Add Unavailability</h1>
+<div class="container mt-5">
+    <form method="post" action="{{ url_for('add_unavailable', teacher_name=teacher_name) }}">
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+            {{ form.day.label(class="form-control-label") }}
+            {{ form.day(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.hour.label(class="form-control-label") }}
+            {{ form.hour(class="form-control") }}
+        </div>
+        <button type="submit" class="btn btn-primary">Add Unavailability</button>
+    </form>
+</div>
+{% endblock %}

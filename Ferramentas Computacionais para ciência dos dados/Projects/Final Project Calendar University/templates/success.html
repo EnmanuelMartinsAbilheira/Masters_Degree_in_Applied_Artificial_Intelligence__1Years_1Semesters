@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Success{% endblock %}
+{% block styles %}
+<style>
+    h1 {
+        padding-top: 80px;
+        padding-bottom: 20px;
+    }
+
+
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mt-3">
+    <h1>Process Completed</h1>
+    <p class="lead">Schedules saved to Excel files in the current directory!<br>
+    The files are located in the folder Schedules.</p>
+    <a href="{{ url_for('display_schedules') }}" class="btn btn-success mt-3">Display Schedules</a>
+</div>
+{% endblock %}
