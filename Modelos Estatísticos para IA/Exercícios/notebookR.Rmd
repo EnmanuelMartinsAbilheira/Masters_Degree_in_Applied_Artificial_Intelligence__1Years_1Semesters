@@ -1,0 +1,735 @@
+
+
+---
+title: "R Notebook Stadistic"
+output:
+  html_notebook: default
+  word_document: default
+---
+
+
+Alumns: Pedro Ferreira A17029, Daniel Fernandes A17014, Enmanuel Martins A16430
+
+Librerias a usar 
+
+```{r}
+setwd("~/Rproject")
+library(readr)
+library(ROCR)
+library(plotly)
+
+#this library is to implement a generalized linear model (GLM)
+library(dplyr)
+library(tidyr)
+
+#this library is to implement a logistoic regresion
+library(glmnet)
+library(caTools)
+
+library(naniar)
+library(tidyverse)
+library(ggplot2)
+library(ggcorrplot) 
+library(randomForest)
+library(caret)
+
+```
+
+We define the setwd to specify where it should search for files, declaring that the project initializes in the location /Rproject.
+
+We define the data.csv as data_cancer.
+
+```{r}
+data_cancer <- read.csv('./data.csv')
+```
+
+```{r}
+# Remove the 'id' column and the 'X' column
+data_cancer <- data_cancer[, -1]  # Remove 'id' column
+data_cancer <- data_cancer[, -ncol(data_cancer)]  # Remove last column (assuming it's 'X')
+
+
+```
+
+```{r}
+head(data_cancer)
+```
+
+The code `head(data_cancer)` displays the first 6 rows of the dataset `data_cancer`, providing a preview of the data. The structure of the columns includes the identification (`id`), diagnosis (`diagnosis`), and various numerical features such as mean radius (`radius_mean`), mean texture (`texture_mean`), mean perimeter (`perimeter_mean`), mean area (`area_mean`), and mean smoothness (`smoothness_mean`), among others.
+
+
+
+
+
+```{r}
+str(data_cancer)
+```
+The code `str(data_cancer)` displays the structure of the dataset `data_cancer`, which consists of 569 observations and 33 variables. These variables include the identification (`id`), diagnosis (`diagnosis`), and various numerical features such as mean radius (`radius_mean`), mean texture (`texture_mean`), mean perimeter (`perimeter_mean`), mean area (`area_mean`), mean smoothness (`smoothness_mean`), mean compactness (`compactness_mean`), mean concavity (`concavity_mean`), mean concave points (`concave.points_mean`), mean symmetry (`symmetry_mean`), and mean fractal dimension (`fractal_dimension_mean`), among others.
+
+
+```{r}
+
+summary(data_cancer)
+
+```
+
+
+
+```{r}
+data_cancerGML <- data_cancer
+
+```
+
+
+
+```{r}
+# Convert the 'diagnosis' variable to a binary factor
+data_cancer$diagnosis <- as.factor(data_cancer$diagnosis)
+
+```
+
+```{r}
+# Check the structure of the data after preprocessing
+str(data_cancer)
+
+```
+
+
+
+
+
+```{r}
+data_1 <- data_cancer %>%
+  as.data.frame() %>%
+  select_if(is.numeric) %>%
+  gather(key = "variable", value = "value")
+
+```
+
+The first block of code transforms the dataset `data_cancer` into a dataframe format, selects the numerical variables using `select_if(is.numeric)`, and then reorganizes the data into a long format using `gather(key = "variable", value = "value")`, where each row represents a unique observation of a variable and its corresponding value.
+
+
+
+```{r} 
+ggplot(data_1, aes(value)) +
+  geom_density() +
+  facet_wrap(~variable)
+```
+The second block of code uses `ggplot` to create density plots for each numerical variable in the transformed dataset. The `geom_density()` function plots the densities of the variables, while `facet_wrap(~variable)` creates separate panels for each variable, making it easy to compare the distributions of the variables.
+
+
+
+
+
+
+
+```{r}
+data_cancer$diagnosis <- factor(data_cancer$diagnosis, levels = c("M","B"), labels = c(0,1))
+```
+The first block of code converts the variable `diagnosis` of the dataset `data_cancer` into a factor with levels "M" and "B", and labels "0" and "1" respectively. This is done using the `factor()` function with the arguments `levels` and `labels` to specify the levels and corresponding labels.
+
+
+
+```{r}
+data_cancer$diagnosis <- as.character(data_cancer$diagnosis)
+
+data_cancer$diagnosis <- as.numeric(data_cancer$diagnosis)
+```
+
+The second block of code first converts the variable `diagnosis` from `factor` to `character` using `as.character()`, and then converts it from `character` to `numeric` using `as.numeric()`. This can be problematic as it converts the labels "M" and "B" into numeric values 1 and 2 respectively, which may not be desired depending on the context of the `diagnosis` variable.
+
+
+
+
+
+
+
+```{r}
+str(data_cancer)
+```
+
+```{r}
+data_cancer <- data_cancer %>% relocate(diagnosis,.after= fractal_dimension_worst)
+```
+
+The code `data_cancer <- data_cancer %>% relocate(diagnosis, .after = fractal_dimension_worst)` relocates the column "diagnosis" in the dataframe `data_cancer` just after the column "fractal_dimension_worst". This means that the "diagnosis" column will be moved to the position immediately after the "fractal_dimension_worst" column in the dataframe. This operation helps organize the columns of the dataframe in a more readable or logical manner.
+
+
+
+
+```{r}
+r <- cor(data_cancer[,0:31])
+
+round(r,2)
+```
+
+The following R code snippet calculates the correlation matrix among the numerical variables of the dataset `data_cancer`. The correlation matrix is a statistical tool that displays the relationship between pairs of variables.
+
+The `cor()` function is used to compute the correlations between the variables, and `round()` is used to round the correlation values to two decimal places.
+
+The result is a matrix where each cell contains the correlation coefficient between two variables. Values close to 1 indicate a strong positive correlation, values close to -1 indicate a strong negative correlation, and values close to 0 indicate a weak or null correlation.
+
+For example, a positive correlation between two variables means that when one variable increases, the other also tends to increase, while a negative correlation indicates that when one variable increases, the other tends to decrease.
+
+The result provides information about the relationship between different features of the dataset, which can aid in data analysis and interpretation.
+
+Below is an excerpt of the correlation matrix rounded to two decimal places:
+
+|                   | texture_mean | perimeter_mean | area_mean | smoothness_mean | ... |
+|-------------------|--------------|----------------|-----------|-----------------|-----|
+| texture_mean      | 1.00         | 0.33           | 0.32      | -0.02           | ... |
+| perimeter_mean    | 0.33         | 1.00           | 0.99      | 0.21            | ... |
+| area_mean         | 0.32         | 0.99           | 1.00      | 0.18            | ... |
+| smoothness_mean   | -0.02        | 0.21           | 0.18      | 1.00            | ... |
+| compactness_mean  | 0.24         | 0.56           | 0.50      | 0.66            | ... |
+| concavity_mean    | 0.30         | 0.72           | 0.69      | 0.52            | ... |
+| concave.points_mean | 0.29      | 0.85           | 0.82      | 0.55            | ... |
+| symmetry_mean     | 0.07         | 0.18           | 0.15      | 0.56            | ... |
+| fractal_dimension_mean | -0.08  | -0.26          | -0.28     | 0.58            | ... |
+| radius_se         | 0.28         | 0.69           | 0.73      | 0.30            | ... |
+| ...               | ...          | ...            | ...       | ...             | ... |
+
+This kind of analysis is commonly used in descriptive statistics and in the initial exploration of data to better understand the relationships between variables and how they may influence the problem at hand.
+
+
+
+
+
+
+```{r}
+ggcorrplot(r)
+```
+
+```{r}
+ggcorrplot(r, hc.order = TRUE, type = "lower",
+           outline.col = "white",
+           ggtheme = ggplot2::theme_gray,
+           colors = c("#6D9EC1", "white", "#E46726"))
+
+```
+
+```{r}
+data_cancer <- data_cancer[,0:31]
+
+```
+
+This code snippet selects the first 32 columns of the dataset `data_cancer` and replaces the original dataset with this new subset.
+
+
+
+
+```{r}
+vis_miss(data_cancer)
+```
+
+```{r}
+sum(is.na(data_cancer))
+```
+We verify that there are no null values within this `data_cancer` dataset.
+
+
+
+```{r}
+sapply(data_cancer,function(x)sum(is.na(x)))
+
+```
+This code provides information about the `data_cancer` dataset. Firstly, it displays the count of missing values in each column using the `sapply` function with `sum(is.na(x))`. Then, it shows the first few rows of the dataset alongside the count of missing values in each column. This enables identifying columns with missing values and obtaining an overview of the data distribution.
+
+
+
+
+
+```{r}
+# Dividir los datos en conjuntos de entrenamiento y prueba (70% entrenamiento, 30% prueba)
+set.seed(123)  # Para reproducibilidad
+indices <- sample(1:nrow(data_cancer), size = floor(0.7 * nrow(data_cancer)))
+train_set <- data_cancer[indices, ]
+test_set <- data_cancer[-indices, ]
+
+
+```
+
+This code divides the `data_cancer` dataset into training and testing sets using a random partitioning approach. Firstly, a random seed is set to ensure the reproducibility of results. Then, random indices representing 70% of the rows of the original dataset are generated, which are used to select the corresponding rows from the original dataset as the training set (`train_set`). The remaining rows form the testing set (`test_set`).
+
+
+
+
+
+```{r}
+```
+
+
+
+Linear Regresion
+```{r}
+# Entrenar el modelo de regresión logística
+model <- glm(diagnosis ~ ., data = train_set, family = binomial, maxit = 100)
+
+
+```
+This code trains a logistic regression model using the `glm()` function in R. The goal is to predict the variable `diagnosis` (which appears to be a binary variable) based on all other variables in the training dataset (`train_set`). The argument `family = binomial` is specified to indicate that it is a binary logistic regression model. The `maxit` parameter sets the maximum number of iterations allowed during the optimization process.
+
+
+
+
+
+
+```{r}
+summary(model)
+```
+
+```{r}
+
+# Hacer predicciones en el conjunto de prueba
+predictions <- predict(model, newdata = test_set, type = "response")
+
+```
+
+This code makes predictions on the test set using the previously trained logistic regression model. The `predict()` function is used specifying the trained model (`model`) and the new test data (`test_set`). The argument `type = "response"` indicates that we want to obtain the probabilities of belonging to the positive class.
+
+
+
+
+
+```{r}
+# Convertir las probabilidades predichas en clases (Maligno o Benigno)
+predicted_classes <- ifelse(predictions > 0.5, "M", "B")
+
+
+```
+
+This code converts the predicted probabilities into classes using a threshold of 0.5. If the probability is greater than 0.5, the class "M" (malignant) is assigned; otherwise, the class "B" (benign) is assigned.
+
+
+
+
+
+```{r}
+
+```
+
+```{r}
+         
+```
+
+
+
+```{r}
+# Evaluar el rendimiento del modelo
+confusion_matrix <- table(predicted_classes, test_set$diagnosis)
+print(confusion_matrix)
+
+```
+This code generates a confusion matrix to evaluate the performance of the classification model. The confusion matrix shows the model's predictions compared to the actual labels in the test set.
+
+- The values on the main diagonal represent correct predictions.
+- The values off the main diagonal represent prediction errors.
+
+
+
+
+
+```{r}
+
+# Crear la matriz de confusión como un marco de datos
+confusion_df <- data.frame(
+  Actual = rep(c("M", "B"), each = 2),
+  Predicted = c("M", "B", "M", "B"),
+  Count = c(confusion_matrix[1, 1], confusion_matrix[2, 1],
+            confusion_matrix[1, 2], confusion_matrix[2, 2])
+)
+
+# Graficar la matriz de confusión
+ggplot(confusion_df, aes(x = Actual, y = Predicted, fill = factor(Count))) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = Count)) +
+  scale_fill_manual(values = c("#FF0000", "#FF0000", "#0000FF", "#0000FF"), 
+                    name = "Count") +
+  theme_minimal() +
+  labs(x = "Actual", y = "Predicted", title = "Confusion Matrix")
+
+```
+This code creates a visualization of the confusion matrix using ggplot2 in R. The confusion matrix is a useful tool for evaluating the performance of a classification model by showing how often the model's predictions match or differ from the actual classes.
+
+- A dataframe `confusion_df` is created containing the actual and predicted classes, as well as the count of observations for each combination.
+- Then, ggplot is used to visualize the confusion matrix as a heatmap, where the color of each cell represents the count of observations.
+- The actual and predicted classes are shown on the x and y axes respectively, and the color of each cell indicates the count of observations.
+- A customized color palette is used to visually highlight differences in the count of observations.
+
+
+
+
+
+
+
+
+
+```{r}
+
+# Calcular las tasas de verdaderos positivos y falsos positivos
+roc_pred <- prediction(predictions, test_set$diagnosis)
+roc_perf <- performance(roc_pred, "tpr", "fpr")
+
+
+```
+
+
+
+```{r}
+# Graficar la curva ROC
+plot(roc_perf, main = "Curva ROC",
+     col = "blue", lwd = 2, 
+     xlab = "Tasa de Falsos Positivos",
+     ylab = "Tasa de Verdaderos Positivos")
+
+
+```
+
+
+
+```{r}
+# Crear un gráfico de dispersión
+plot(test_set$diagnosis, predictions, xlab = "Observado", ylab = "Predicción")
+
+# Agregar línea de referencia diagonal
+abline(a = 0, b = 1, lty = 2, col = "red")
+
+
+
+```
+
+
+
+```{r}
+# Calcular el área bajo la curva ROC (AUC)
+auc <- performance(roc_pred, "auc")
+print(paste("Área bajo la curva ROC (AUC):", auc@y.values[[1]]))
+
+
+```
+
+
+
+
+```{r}
+
+
+# Calcular las tasas de verdaderos positivos y falsos positivos
+roc_pred <- prediction(predictions, test_set$diagnosis)
+roc_perf <- performance(roc_pred, "tpr", "fpr")
+
+# Calcular el AUC
+auc <- performance(roc_pred, "auc")
+print(paste("Área bajo la curva ROC (AUC):", auc@y.values[[1]]))
+
+# Crear el gráfico de la curva ROC
+plot(roc_perf, main = "Curva ROC", col = "blue", lwd = 2)
+
+# Agregar línea de referencia diagonal
+abline(a = 0, b = 1, lty = 2, col = "red")
+
+# Agregar leyenda
+legend("bottomright", legend = paste("AUC =", round(auc@y.values[[1]], 2)), col = "blue", lwd = 2)
+
+```
+This code calculates the Receiver Operating Characteristic (ROC) curve and the Area Under the Curve (AUC) to evaluate the performance of a binary classification model.
+
+- The model predictions and the true class labels from the test set are used to calculate the ROC curve and the AUC.
+- A prediction object (`roc_pred`) is created using the model predictions and the true class labels.
+- True Positive Rates (TPR) and False Positive Rates (FPR) are calculated using the performance object (`roc_perf`).
+- The AUC is calculated using the same performance object.
+- A ROC curve plot is created with True Positive Rates on the y-axis and False Positive Rates on the x-axis.
+- A diagonal reference line is added to the plot to represent the performance of a random classifier.
+- A legend is added showing the AUC value on the plot.
+
+
+
+
+
+This code calculates True Positive Rates and False Positive Rates, as well as the Area Under the ROC Curve (AUC), to evaluate the performance of a classification model. Then, it creates a ROC curve plot with a diagonal reference line and a legend showing the AUC value.
+
+
+
+
+
+```{r}
+# Verificar los nombres de las columnas en train_set
+#colnames(train_set)
+
+# Asegurarse de que todas las columnas en 'variables' estén presentes en train_set
+#all(variables %in% colnames(train_set))
+
+# Definir las variables predictoras
+variables <- c("radius_mean","texture_mean","perimeter_mean","area_mean","smoothness_mean","compactness_mean", "concavity_mean", "concave.points_mean","symmetry_mean","fractal_dimension_mean")
+
+# Ajustar el modelo de regresión lineal
+lm_model <- lm(diagnosis ~ ., data = train_set[, c(variables, "diagnosis")])
+
+
+
+```
+
+In this code:
+
+- Predictor variables `variables` are defined, which include the features from the dataset that will be used to predict the response variable `diagnosis`.
+- A linear regression model (`lm_model`) is fitted using the `lm()` function. The formula `diagnosis ~ .` is specified, meaning that the variable `diagnosis` is the response variable and all other variables specified in the dataset are used as predictor variables.
+- The training set `train_set` is used and only the columns corresponding to the predictor variables and the response variable are selected.
+
+
+
+
+```{r}
+# Mostrar resumen del modelo
+summary(lm_model)
+
+```
+The model summary displays the estimated coefficients for each of the predictor variables included in the model. Here are some key points for interpreting the results:
+
+*Intercept: The intercept value indicates the estimated value of the response variable (diagnosis) when all predictor variables are zero. In this case, the intercept is 3.0187338.
+
+*Coefficients of predictor variables: The estimated coefficients for each predictor variable indicate how the response variable (diagnosis) changes when a predictor variable increases by one unit, while holding all other variables constant. For example, the coefficient for radius_mean is -0.4280016, meaning that on average, the logarithm of the proportion of malignant diagnoses is expected to decrease by 0.4280016 units when radius_mean increases by one unit, holding all other variables constant.
+
+*p-values: The p-values indicate whether the coefficients are statistically significant. The smaller the p-value, the more significant the contribution of the predictor variable to the model. For example, radius_mean, texture_mean, area_mean, and concave.points_mean have significant p-values (below the typical significance level of 0.05), suggesting that these variables have a significant association with the response variable.
+
+*R-squared: The R-squared is a measure of how well the data fit the model. In this case, the R-squared is 0.6749, meaning that approximately 67.49% of the variability in the response variable can be explained by the predictor variables included in the model.
+
+*F-statistic: The F-statistic and its associated p-value are used to test the overall significance of the model. A small p-value for the F-statistic indicates that at least one of the predictor variables is significantly different from zero in relation to the response variable.
+
+In summary, this model summary provides information on how the predictor variables are associated with the response variable (diagnosis) in the linear regression model.
+
+
+
+
+```{r}
+# Predecir en el conjunto de prueba
+predictions <- predict(lm_model, newdata = test_set[, c(variables, "diagnosis")])
+
+```
+
+```{r}
+# Evaluar el rendimiento del modelo
+# Por ejemplo, puedes calcular el error cuadrático medio (MSE)
+mse <- mean((predictions - test_set$diagnosis)^2)
+mse
+```
+A mean squared error (MSE) of 0.0754 indicates that, on average, the predictions of the linear regression model deviate from the actual values by approximately 0.0754 squared units. As a general rule, the lower the MSE value, the better the model performance, as it indicates that the model predictions are closer to the actual values.
+
+
+
+```{r}
+
+
+# Calcular las tasas de verdaderos positivos y falsos positivos
+roc_pred <- prediction(predictions, test_set$diagnosis)
+roc_perf <- performance(roc_pred, "tpr", "fpr")
+
+# Calcular el AUC
+auc <- performance(roc_pred, "auc")
+print(paste("Área bajo la curva ROC (AUC):", auc@y.values[[1]]))
+
+# Crear el gráfico de la curva ROC
+plot(roc_perf, main = "Curva ROC", col = "blue", lwd = 2)
+
+# Agregar línea de referencia diagonal
+abline(a = 0, b = 1, lty = 2, col = "red")
+
+# Agregar leyenda
+legend("bottomright", legend = paste("AUC =", round(auc@y.values[[1]], 2)), col = "blue", lwd = 2)
+
+```
+
+This code calculates True Positive Rates and False Positive Rates, as well as the Area Under the ROC Curve (AUC), to evaluate the performance of a classification model. Then, it creates a ROC curve plot with a diagonal reference line and a legend showing the AUC value. After modifying the performance accuracy, the graph and the percentage of the value with an AUC of 0.99 will change accordingly.
+
+
+
+
+
+
+
+end linear Regresion
+
+
+
+```{r}
+# Remove the 'id' column and the 'X' column
+data_cancerGML <- data_cancerGML[, -1]  # Remove 'id' column
+data_cancerGML <- data_cancerGML[, -ncol(data_cancerGML)]  # Remove last column (assuming it's 'X')
+
+
+```
+
+
+
+
+```{r}
+
+# Fit the GLM model
+# Define the formula
+formula <- diagnosis ~ . - id - X
+
+# Check if 'X' exists in the dataset
+if ("X" %in% colnames(data_cancer)) {
+  # Fit the GLM model
+  glm_model <- glm(formula, data = data_cancer, family = binomial)
+} else {
+  print("Variable 'X' does not exist in the dataset.")
+}
+
+
+```
+
+```{r}
+
+# Assess the model's performance
+summary(glm_model)
+```
+
+```{r}
+# Remove the 'id' column and the 'X' column
+data_cancerGML <- data_cancerGML[, -1]  # Remove 'id' column
+data_cancerGML <- data_cancerGML[, -ncol(data_cancerGML)]  # Remove last column (assuming it's 'X')
+
+# Convert the 'diagnosis' variable to a binary factor
+data_cancerGML$diagnosis <- as.factor(data_cancerGML$diagnosis)
+
+# Check the structure of the data after preprocessing
+str(data_cancerGML)
+
+```
+
+```{r}
+# Preprocess the data (if needed)
+# In this case, we will convert the diagnosis variable to a binary factor
+data_cancerGML$diagnosis <- as.factor(data_cancerGML$diagnosis)
+
+# Define the formula for the GLM
+formula <- as.formula("diagnosis ~ radius_mean + texture_mean + perimeter_mean + area_mean + smoothness_mean + compactness_mean + concavity_mean + concave.points_mean + symmetry_mean + fractal_dimension_mean")
+
+# Fit the GLM model
+glm_model <- glm(formula, data = data_cancerGML, family = binomial)
+
+# Assess the model's performance
+summary(glm_model)
+```
+
+```{r}
+plot(cars)
+```
+
+
+
+```{r}
+plot(cars)
+```
+
+
+```{r}
+plot(cars)
+```
+
+
+```{r}
+plot(cars)
+```
+
+
+```{r}
+# Train the logistic regression model
+logistic_model <- glm(diagnosis ~ ., data = train_set, family = binomial)
+
+# Make predictions on the test set
+predictions <- predict(logistic_model, newdata = test_set, type = "response")
+
+# Convert predicted probabilities to classes (Malignant or Benign)
+predicted_classes <- ifelse(predictions > 0.5, "M", "B")
+
+# Evaluate model performance
+confusion_matrix <- table(predicted_classes, test_set$diagnosis)
+print(confusion_matrix)
+
+# Visualize confusion matrix
+confusion_df <- data.frame(
+  Actual = rep(c("M", "B"), each = 2),
+  Predicted = c("M", "B", "M", "B"),
+  Count = c(confusion_matrix[1, 1], confusion_matrix[2, 1],
+            confusion_matrix[1, 2], confusion_matrix[2, 2])
+)
+
+# Plot confusion matrix
+ggplot(confusion_df, aes(x = Actual, y = Predicted, fill = factor(Count))) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = Count)) +
+  scale_fill_manual(values = c("#FF0000", "#FF0000", "#0000FF", "#0000FF"), 
+                    name = "Count") +
+  theme_minimal() +
+  labs(x = "Actual", y = "Predicted", title = "Confusion Matrix")
+
+# Calculate True Positive Rate and False Positive Rate
+roc_pred <- prediction(predictions, test_set$diagnosis)
+roc_perf <- performance(roc_pred, "tpr", "fpr")
+
+# Plot ROC curve
+plot(roc_perf, main = "ROC Curve",
+     col = "blue", lwd = 2, 
+     xlab = "False Positive Rate",
+     ylab = "True Positive Rate")
+
+# Calculate AUC
+auc <- performance(roc_pred, "auc")
+print(paste("Area Under the Curve (AUC):", auc@y.values[[1]]))
+
+```
+
+```{r}
+
+```
+
+
+
+```{r}
+# Check the structure of the data_cancer dataframe
+str(data_cancer)
+
+# Make sure 'id' and 'X' are columns in your dataframe and not part of the formula
+# If 'id' and 'X' are indeed columns that need to be excluded from the formula, make sure they are correctly specified
+
+# Update the formula to exclude 'id' and 'X' if they are indeed columns
+formula_glm <- as.formula("diagnosis ~ .")
+
+# Fit the GLM model
+glm_model <- glm(formula_glm, data = data_cancer, family = binomial)
+
+# Assess the model's performance
+summary(glm_model)
+
+
+```
+
+
+
+```{r}
+# Assume you have trained a logistic regression model (logistic_model) or a GLM model (glm_model) already
+
+# Step 1: Train Sequence Model
+
+# Step 2: Extract Features
+sequence_features <- predict(logistic_model, newdata = data_cancer, type = "response")
+# Or
+sequence_features <- predict(glm_model, newdata = data_cancer, type = "response")
+
+# Step 3: Train Clustering Model (e.g., K-means)
+library(stats)
+num_clusters <- 3  # Number of clusters
+clustering_model <- kmeans(sequence_features, centers = num_clusters)
+
+# Step 4: Use clustering results for further analysis or decision-making
+cluster_labels <- clustering_model$cluster
+# You can integrate cluster_labels with your predictions or analyze the clusters further
+
+# Step 5: Evaluate models separately and jointly
+
+# Step 6: Integrate and deploy as needed
+
+```
+
+
