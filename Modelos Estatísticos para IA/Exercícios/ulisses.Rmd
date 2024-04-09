@@ -1,0 +1,533 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+# Load necessary libraries
+setwd("~/Rproject")
+library(readr)
+library(tidyverse)
+library(GGally)
+library(ggplot2)
+library(reshape2)
+library(corrplot)
+library(caret)
+library(cluster)
+```
+
+```{r}
+# Load data
+data <- read.csv("./apple_quality.csv")
+
+```
+
+
+```{r}
+# --------------------------------------------------------
+# Exploratory Data Analysis (EDA) with Visualizations
+# --------------------------------------------------------
+
+# Check for missing values
+summary(data)
+```
+
+
+```{r}
+# Handle missing values in Acidity (assuming median imputation)
+data$Acidity <- as.numeric(as.character(data$Acidity))
+non_numeric <- is.na(data$Acidity_numeric) & !is.na(data$Acidity)
+data$Acidity[is.na(data$Acidity)] <- median(data$Acidity, na.rm = TRUE)
+
+```
+
+
+```{r}
+# Check for missing values again (useful for further cleaning if needed)
+summary(data)
+
+```
+
+
+```{r}
+
+# Visualizing Distributions of Individual Variables
+
+# Histograms
+# Using ggplot2
+# Reset graphics state (optional)
+
+ggplot(data, aes(x = Size)) +
+  geom_histogram(binwidth = 0.5, fill = "blue", color = "black") +
+  theme_minimal() +
+  labs(title = "Distribution of Size", x = "Size", y = "Count")
+
+
+```
+
+
+```{r}
+# Density plots
+ggplot(data, aes(x = Sweetness)) +
+  geom_density(fill = "green") +
+  labs(title = "Density of Sweetness", x = "Sweetness")
+
+```
+
+
+```{r}
+# Visualizing Relationships Between Variables
+
+# Scatter plots (example - Sweetness vs Crunchiness)
+plot(data$Sweetness, data$Crunchiness, main = "Sweetness vs Crunchiness", xlab = "Sweetness", ylab = "Crunchiness")
+
+```
+
+
+```{r}
+# Pair Plots
+ggpairs(data[, c("Size", "Weight", "Sweetness", "Crunchiness", "Juiciness", "Ripeness", "Acidity")])
+
+```
+
+```{r}
+# Correlation Matrix
+cor_matrix <- cor(data[, sapply(data, is.numeric)])
+
+```
+
+
+```{r}
+# Heatmap with ggplot2
+melted_cor_matrix <- melt(cor_matrix)
+ggplot(melted_cor_matrix, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(midpoint = 0, low = "green", mid = "white", high = "red") +
+  theme_minimal() +
+  labs(title = "Correlation Matrix Heatmap")
+
+```
+
+```{r}
+# Categorical Variables
+# Bar plot for Quality
+quality_distribution <- table(data$Quality)
+barplot(quality_distribution, main = "Distribution of Apple Quality", xlab = "Quality", ylab = "Count")
+
+```
+
+
+```{r}
+# --------------------------------------------------------
+# Linear Regression Section
+# --------------------------------------------------------
+
+# Prepare Data for Linear Regression
+regression_data <- data[, !(names(data) %in% c("A_id", "Quality"))]
+
+```
+
+
+```{r}
+# Fit the Linear Regression Model
+model <- lm(Juiciness ~ ., data=regression_data)
+
+```
+
+
+```{r}
+
+# Display and interpret model summary
+summary(model)
+
+```
+
+
+```{r}
+# Evaluate Model's Assumptions (plots not shown here)
+par(mar = c(bottom = 2, left = 2, top = 2, right = 2))
+#par(mfrow=c(2,2))
+plot(model)
+
+```
+
+
+```{r}
+
+# Make Predictions (for demonstration)
+predictions <- predict(model, regression_data)
+head(predictions)
+head(regression_data$Juiciness)
+
+```
+
+
+```{r}
+# --------------------------------------------------------
+# Logistic Regression Section
+# --------------------------------------------------------
+
+# Prepare Data for Logistic Regression
+data$QualityNumeric <- ifelse(data$Quality == "good", 1, 0)
+logistic_data <- data[, c("Size", "Weight", "Sweetness", "Crunchiness", "Juiciness", "Ripeness", "Acidity", "QualityNumeric")]
+
+```
+
+```{r}
+
+# Fit the Logistic Regression Model
+logistic_model <- glm(QualityNumeric ~ ., data = logistic_data, family = binomial)
+```
+
+
+```{r}
+# Display and interpret model summary
+summary(logistic_model)
+```
+
+
+```{r}
+# Predicting outcomes using the model
+fitted_results <- predict(logistic_model, newdata = logistic_data, type = "response")
+predicted_class <- ifelse(fitted_results > 0.5, 1, 0)
+
+```
+
+
+```{r}
+# Now, ensure both actual and predicted are of the same length
+actual <- logistic_data$QualityNumeric # Make sure this matches the data used in predict()
+predicted <- as.factor(predicted_class)
+```
+
+
+```{r}
+# Check lengths (for troubleshooting)
+print(length(actual))
+print(length(predicted))
+
+```
+
+
+```{r}
+# Assuming the lengths match, create the confusion matrix
+if (length(actual) == length(predicted)) {
+  conf_matrix <- table(Predicted = predicted, Actual = actual)
+  print(conf_matrix)
+  
+  # Calculate metrics based on the confusion matrix
+  accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+  print(paste("Accuracy:", accuracy))
+  
+  # Sensitivity and specificity calculations
+  sensitivity <- conf_matrix["1", "1"] / sum(conf_matrix[, "1"])
+  specificity <- conf_matrix["0", "0"] / sum(conf_matrix[, "0"])
+  print(paste("Sensitivity:", sensitivity))
+  print(paste("Specificity:", specificity))
+} else {
+  print("Error: Predicted and actual outcomes do not match in length.")
+}
+
+
+print(conf_matrix)
+
+```
+
+```{r}
+# Calculating accuracy, sensitivity, specificity, etc., from the confusion matrix
+accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+print(paste("Accuracy:", accuracy))
+
+```
+
+
+```{r}
+# Assuming '1' is the positive class and '0' is the negative class
+sensitivity <- conf_matrix[2, 2] / (conf_matrix[2, 2] + conf_matrix[2, 1])
+specificity <- conf_matrix[1, 1] / (conf_matrix[1, 1] + conf_matrix[1, 2])
+print(paste("Sensitivity:", sensitivity))
+print(paste("Specificity:", specificity))
+```
+
+
+```{r}
+# Make Predictions for new data (example)
+new_data <- data.frame(Size = c(0.5), Weight = c(-0.2), Sweetness = c(1.0), Crunchiness = c(0.8), Juiciness = c(0.5), Ripeness = c(-0.3), Acidity = c(0.4))
+predicted_quality <- predict(logistic_model, newdata = new_data, type = "response")
+predicted_class_new <- ifelse(predicted_quality > 0.5, "good", "bad")
+print(predicted_class_new)
+```
+
+
+
+
+
+
+```{r}
+# --------------------------------------------------------
+# Linear Regression Section
+# --------------------------------------------------------
+
+# Prepare Data for Linear Regression
+regression_data <- data[, !(names(data) %in% c("A_id", "Quality"))]
+```
+
+
+```{r}
+# Fit the Linear Regression Model
+model <- lm(Juiciness ~ ., data=regression_data)
+```
+
+
+```{r}
+# Display and interpret model summary
+summary(model)
+```
+
+
+```{r}
+# Evaluate Model's Assumptions (plots not shown here)
+par(mar = c(bottom = 2, left = 2, top = 2, right = 2))
+#par(mfrow=c(2,2))
+plot(model)
+
+# Make Predictions (for demonstration)
+predictions <- predict(model, regression_data)
+head(predictions)
+head(regression_data$Juiciness)
+```
+
+
+
+
+
+
+Logistic Regression Section
+
+
+```{r}
+# --------------------------------------------------------
+# Logistic Regression Section
+# --------------------------------------------------------
+
+# Prepare Data for Logistic Regression
+data$QualityNumeric <- ifelse(data$Quality == "good", 1, 0)
+logistic_data <- data[, c("Size", "Weight", "Sweetness", "Crunchiness", "Juiciness", "Ripeness", "Acidity", "QualityNumeric")]
+
+```
+
+
+```{r}
+# Fit the Logistic Regression Model
+logistic_model <- glm(QualityNumeric ~ ., data = logistic_data, family = binomial)
+```
+
+
+```{r}
+# Display and interpret model summary
+summary(logistic_model)
+```
+
+
+```{r}
+# Predicting outcomes using the model
+fitted_results <- predict(logistic_model, newdata = logistic_data, type = "response")
+predicted_class <- ifelse(fitted_results > 0.5, 1, 0)
+```
+
+
+```{r}
+# Now, ensure both actual and predicted are of the same length
+actual <- logistic_data$QualityNumeric # Make sure this matches the data used in predict()
+predicted <- as.factor(predicted_class)
+```
+
+
+```{r}
+# Check lengths (for troubleshooting)
+print(length(actual))
+print(length(predicted))
+```
+
+
+```{r}
+# Assuming the lengths match, create the confusion matrix
+if (length(actual) == length(predicted)) {
+  conf_matrix <- table(Predicted = predicted, Actual = actual)
+  print(conf_matrix)
+  
+  # Calculate metrics based on the confusion matrix
+  accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+  print(paste("Accuracy:", accuracy))
+  
+  # Sensitivity and specificity calculations
+  sensitivity <- conf_matrix["1", "1"] / sum(conf_matrix[, "1"])
+  specificity <- conf_matrix["0", "0"] / sum(conf_matrix[, "0"])
+  print(paste("Sensitivity:", sensitivity))
+  print(paste("Specificity:", specificity))
+} else {
+  print("Error: Predicted and actual outcomes do not match in length.")
+}
+
+```
+
+
+```{r}
+# Make Predictions for new data (example)
+new_data <- data.frame(Size = c(0.5), Weight = c(-0.2), Sweetness = c(1.0), Crunchiness = c(0.8), Juiciness = c(0.5), Ripeness = c(-0.3), Acidity = c(0.4))
+predicted_quality <- predict(logistic_model, newdata = new_data, type = "response")
+predicted_class_new <- ifelse(predicted_quality > 0.5, "good", "bad")
+print(predicted_class_new)
+```
+
+
+
+
+```{r}
+# Check column names
+colnames(logistic_data)
+
+# Check structure of the dataset
+str(logistic_data)
+
+```
+
+
+
+```{r}
+# Fit the Logistic Regression Model
+logistic_model <- glm(QualityNumeric ~ Size + Weight + Sweetness + Crunchiness + Juiciness + Ripeness + Acidity, 
+                      data = logistic_data, family = binomial)
+
+```
+
+
+```{r}
+# Remove missing values from Sweetness column
+logistic_data <- logistic_data[!is.na(logistic_data$Sweetness), ]
+
+# Define 'x' as a sequence of values
+x <- seq(min(logistic_data$Sweetness, na.rm = TRUE), 
+         max(logistic_data$Sweetness, na.rm = TRUE), 
+         length.out = 100)
+
+# Prepare new data for prediction
+new_data <- data.frame(Sweetness = x,
+                       Size = rep(0, length(x)),  
+                       Weight = rep(0, length(x)),  
+                       Crunchiness = rep(0, length(x)),  
+                       Juiciness = rep(0, length(x)),  
+                       Ripeness = rep(0, length(x)),  
+                       Acidity = rep(0, length(x)))
+
+```
+
+
+
+```{r}
+# Predict using the logistic regression model
+y <- predict(logistic_model, newdata = new_data, type = "response")
+
+```
+
+
+```{r}
+# Plot the logistic regression curve
+plot(logistic_data$Sweetness, logistic_data$QualityNumeric,
+     xlab = "Sweetness", ylab = "Probability of Good Quality",
+     main = "Logistic Regression Curve")
+
+# Add logistic regression curve
+lines(x, y, col = "blue", lwd = 2)
+
+# Add legend
+legend("right", legend = "Logistic Regression Curve", col = "blue", lty = 1, lwd = 3)
+
+```
+
+
+
+
+Clustering 
+
+
+
+```{r}
+# Load the data
+data <- read.csv("apple_quality.csv")
+
+```
+
+
+```{r}
+# Select relevant features for clustering (excluding A_id and Quality columns)
+clustering_data <- data[, c("Size", "Weight", "Sweetness", "Crunchiness", "Juiciness", "Ripeness", "Acidity")]
+```
+
+
+```{r}
+# Preprocess the data (remove any missing values)
+clustering_data <- na.omit(clustering_data)
+```
+
+
+```{r}
+# Convert non-numeric columns to numeric
+clustering_data[] <- lapply(clustering_data, as.numeric)
+
+```
+
+
+```{r}
+# Check for non-numeric columns
+non_numeric_cols <- sapply(clustering_data, function(x) !is.numeric(x))
+if (any(non_numeric_cols)) {
+  print("Non-numeric columns found:")
+  print(names(clustering_data)[non_numeric_cols])
+}
+
+```
+
+
+```{r}
+# Remove any rows with missing values after conversion
+clustering_data <- na.omit(clustering_data)
+```
+
+
+```{r}
+# Scale the features (optional but recommended for K-means)
+scaled_data <- scale(clustering_data)
+```
+
+
+```{r}
+# Choose the number of clusters (e.g., 3 clusters)
+k <- 2
+```
+
+
+```{r}
+# Fit the K-means clustering model
+kmeans_model <- kmeans(scaled_data, centers = k)
+
+```
+
+
+```{r}
+# Visualize the clusters (for 2D data, considering only two features)
+# For higher-dimensional data, you may need to use dimensionality reduction techniques for visualization
+plot(scaled_data[, c("Sweetness", "Crunchiness")], col = kmeans_model$cluster, 
+     main = "K-means Clustering of Apples", xlab = "Sweetness", ylab = "Crunchiness")
+
+# Add cluster centers to the plot
+points(kmeans_model$centers[, c("Sweetness", "Crunchiness")], col = 1:k, pch = 8, cex = 2)
+
+```
+
+
+
+```{r}
+```
+
