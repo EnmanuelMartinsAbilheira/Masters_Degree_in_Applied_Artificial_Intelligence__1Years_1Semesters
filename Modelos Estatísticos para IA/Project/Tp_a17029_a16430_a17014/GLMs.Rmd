@@ -1,0 +1,938 @@
+---
+title: "R Project"
+output:
+  html_document:
+    df_print: paged
+  html_notebook:
+    mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML.js"
+---
+
+### Imports
+
+```{r}
+
+suppressWarnings({
+  library(tidyverse) 
+  library(skimr) 
+  library(ggplot2)
+  library(GGally)
+  library(corrplot)
+  library(car)
+  library(knitr)
+  library(kableExtra)
+  library(gridExtra)
+  library(glmnet)
+  library(conflicted)
+  library(mfx)
+  suppressMessages(conflict_prefer("filter", "dplyr"))
+  suppressMessages(conflict_prefer("lag", "dplyr"))
+  suppressMessages(conflict_prefer("expand", "tidyr"))
+  suppressMessages(conflict_prefer("pack", "tidyr"))
+  suppressMessages(conflict_prefer("unpack", "tidyr"))
+})
+
+```
+
+### Read/Preprocess data
+
+```{r}
+data<- read.csv("data.csv", header = TRUE)
+head(data)
+```
+
+
+#### Check for null/not available values
+
+```{r}
+na_summary <- colSums(is.na(data))
+na_summary_df <- data.frame(Missing_Values = na_summary)
+na_summary_df
+```
+#### Remove unnamed column X (NA values)
+
+```{r}
+data$X <- NULL
+```
+
+#### Remove column id (not used on the problem)
+
+```{r}
+data$id <- NULL
+head(data)
+```
+
+#### Create a new column with factor levels "B" and "M"
+
+```{r}
+# data$diagnosis_factored <- factor(data$diagnosis, labels = c("B", "M"))
+data$diagnosis_factored <- factor(data$diagnosis, levels= c("B","M"), labels= c(0,1))
+# Reorder the columns
+data <- data[, c("diagnosis", "diagnosis_factored", setdiff(names(data), c("diagnosis", "diagnosis_factored")))]
+tail(data)
+
+```
+
+#### Bar chart to check the distribution of benign and malignant tumors
+
+```{r}
+data %>% count(diagnosis)
+```
+```{r}
+ggplot(data, aes(x = diagnosis_factored, fill = diagnosis_factored)) +
+  geom_bar(stat = "count") +
+  theme_classic() +
+  scale_y_continuous(breaks = seq(0, 500, by = 30)) +
+  labs(title = "Distribution of Diagnosis Cases",
+       x = "Diagnosis",
+       y = "Count",
+       fill = "Diagnosis") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+#### Check structure and summary of the dataframe
+
+```{r}
+glimpse(data)
+
+```
+
+```{r}
+
+# Only on numeric (dbl) columns
+dbl_columns <- Filter(is.numeric, data)
+data_summary <- summary(dbl_columns)
+
+# Output in a tabular format (kable)
+kable_table <- kable(data_summary, caption = "Summary of Dataset")
+
+styled_table <- kable_styling(kable_table, 
+                              latex_options = c("striped", "hold_position"), 
+                              full_width = FALSE) %>%
+                column_spec(1:ncol(data_summary), border_left = TRUE, border_right = TRUE)
+
+styled_table
+
+```
+
+
+### Multiple Linear Regression (MLR)
+
+For the MLR, we will focus on the mean attributes of the data set.
+The mean features were chosen for the linear regression analysis due to their representation of the average value across multiple measurements, providing a robust characterization of the central tendency of each attribute.
+
+#### Select mean features
+
+```{r}
+# Find column names containing "_mean"
+mean_cols <- grep("_mean", names(data), value = TRUE)
+# Create a new data frame with only the columns containing "_mean"
+mean_features <- data[, mean_cols]
+head(mean_features)
+```
+
+#### Check the correlation between those features
+
+```{r}
+
+correlation_matrix <- cor(mean_features)
+# Display the correlation matrix as a table
+kable(correlation_matrix, caption = "Correlation Matrix of Mean Features") %>%
+  kable_styling(full_width = FALSE, font_size = 16)
+
+```
+
+```{r}
+# Create a correlation plot (heatmap)
+corrplot(correlation_matrix, method = "color", type = "upper", tl.col = "black", tl.srt = 45)
+```
+
+#### Check which mean feature has the highest absolute correlation with the others
+
+```{r}
+
+highest_correlation <- apply(correlation_matrix, 2, function(x) max(abs(x)))
+highest_correlation_feature <- names(highest_correlation)[which.max(highest_correlation)]
+
+print(paste("Feature with the highest correlation with others:", highest_correlation_feature))
+
+```
+The mean feature that demonstrated the strongest correlation with the remaining variables was chosen as the response variable, while the remaining mean features were selected as predictors. This approach aimed to capture the most significant associations within the dataset and facilitate the investigation of potential predictive relationships.
+
+
+
+#### Pair plots and correlations between mean features
+
+```{r, fig.width=15, fig.height=12}
+
+ggpairs(mean_features, progress = FALSE)
+
+```
+
+#### We will use radius_mean as Y (dependent/response variable)
+
+```{r}
+
+formula <- as.formula("radius_mean ~ .")
+mlr_model <- glm(formula, family = gaussian(), data = mean_features)
+summary(mlr_model)
+
+```
+The perimeter_mean, area_mean, smoothness_mean, compactness_mean, concavity_mean, and fractal_dimension_mean predictors have statistically significant coefficients, as indicated by their p-values (< 0.05).
+
+The texture_mean, concave.points_mean, and symmetry_mean predictors do not appear to be statistically significant, as their p-values are greater than the significance level of 0.05.
+
+The model's goodness of fit can be evaluated by comparing the null deviance (before adding predictors) and the residual deviance (after adding predictors). A significant reduction in deviance suggests that the predictors explain a significant amount of variability in the response variable.
+
+The overall model suggests that the perimeter_mean, area_mean, smoothness_mean, compactness_mean, concavity_mean, and fractal_dimension_mean predictors collectively have a significant influence on the radius_mean.
+
+Coefficient Interpretation:
+
+Regarding the statistically significant coefficients, for every one-unit increase in a particular predictor, the outcome variable (radius_mean) is expected to increase/decrease by a factor of (coefficient) units, on average, holding other predictors constant.
+
+Example:
+For every one-unit increase in perimeter mean, the radius_mean is expected to increase by 0.1569 units, on average, holding other predictors constant.
+
+
+#### Get the relevant/significant features
+
+```{r}
+# Get the p-values of the coefficients
+p_values <- summary(mlr_model)$coefficients[, 4]
+
+# Set the significance level
+alpha <- 0.05
+
+# Extract significant features based on p-values
+significant_features <- names(p_values[p_values < alpha])
+significant_features
+```
+
+#### Analysis of the full linear model
+
+```{r}
+names(mlr_model)
+```
+```{r}
+mlr_model$coefficients
+
+```
+
+#### SQRE / SSResiduals
+```{r}
+sqre <- sum(residuals(mlr_model)^2)
+sqre
+```
+#### R-squared
+
+```{r}
+names(summary(mlr_model))
+```
+mlr_model$deviance: Deviance of the MLR. It quantifies how well the model fits the data by comparing the observed values to the values predicted by the model. Lower deviance indicates better fit.(SSResiduals)
+
+mlr_model$null.deviance: Deviance of the null model. The null model is a simple model that contains no predictors, it predicts the mean of the dependent variable for all observations. It serves as a baseline for comparison to the MLR model.(TSS - Total squared sum)
+
+The formula for R-squared:
+$$
+R^2 = \frac{\text{SSRegression}}{\text{TSS}}
+$$
+and, 
+$$
+TSS = {\text{SSRegression}} + {\text{SSResiduals}}
+$$
+so we can write,
+$$
+R^2 = 1 - \frac{\text{Deviance of MLR model}}{\text{Deviance of null model}}
+$$
+
+
+```{r}
+r_squared <- 1 - mlr_model$deviance/mlr_model$null.deviance
+r_squared
+```
+Attention: R2 tends to increase with the number of predictors, even if they are not meaningful.
+
+#### Adjusted R-squared
+
+$$
+R_a^2 = 1 - \left( 1 - R^2 \right) \times \frac{{n - 1}}{{n - (p + 1)}}
+$$
+
+```{r}
+n <- nrow(mean_features)
+formula <- formula(mlr_model)
+# Count the number of predictors in the formula
+p <- length(attr(terms(formula), "term.labels")) - 1  # Note: Exclude the Y term
+adjusted_r_squared <- 1 - ((1 - r_squared) * (n - 1) / (n - p - 1))
+adjusted_r_squared
+```
+#### Mean squared error
+
+```{r}
+mse <- sqre / n
+mse
+```
+
+#### Other way to calculate r squared
+
+```{r}
+residuals <- residuals(mlr_model)
+TSS <- sum((mean(mean_features$radius_mean) - mean_features$radius_mean)^2)
+RSS <- sum(residuals^2)
+rsquared <- 1 - (RSS / TSS)
+rsquared
+```
+
+#### Confidence intervals
+
+```{r}
+confint(mlr_model)
+```
+#### Residuals analysis (full linear model)
+
+#### Residuals vs. Fitted Values Plot 
+```{r}
+residuals <- residuals(mlr_model)
+fitted_values <- fitted(mlr_model)
+residuals_df <- data.frame(Fitted_Values = fitted_values, Residuals = residuals)
+ggplot(residuals_df, aes(x = Fitted_Values, y = Residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +  # Add a dashed horizontal line at y = 0
+  labs(x = "Fitted Values", y = "Residuals", title = "Residuals vs. Fitted Values Plot")
+```
+
+#### Normal Q-Q (Quantile-Quantile) Plot
+
+```{r}
+ggplot(residuals_df, aes(sample = Residuals)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(x = "Theoretical Quantiles", y = "Standardized Residuals", title = "Normal Q-Q Plot")
+```
+#### Residuals vs. Leverage Plot
+
+```{r}
+leverage <- hatvalues(mlr_model)
+plot_data <- data.frame(Residuals = residuals, Leverage = leverage)
+
+ggplot(plot_data, aes(x = Leverage, y = Residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(x = "Leverage", y = "Standardized Residuals", title = "Residuals vs. Leverage Plot")
+```
+
+#### Scale-Location Plot
+
+```{r}
+sqrt_std_residuals <- sqrt(abs(rstandard(mlr_model)))
+plot_data <- data.frame(Fitted_Values = fitted_values, SQRT_Std_Residuals = sqrt_std_residuals)
+
+ggplot(plot_data, aes(x = Fitted_Values, y = SQRT_Std_Residuals)) +
+  geom_point() +
+  geom_smooth(method = "loess", se = FALSE, color = "blue", formula = y ~ x) +
+  labs(x = "Fitted Values", y = "SQRT Standardized Residuals", title = "Scale-Location Plot")
+```
+
+#### Sequential deletion algorithm (with AIC as base)
+
+
+```{r}
+step_result <- step(mlr_model, dir="backward")
+```
+```{r}
+names(step_result)
+```
+#### Get the final submodel output from step()
+```{r}
+summary(step_result)
+```
+
+The overall model suggests that the coefficients for all predictors have associated p-values (Pr(>|t|)) that are less than the conventional significance level of 0.05. This indicates that all predictor variables are statistically significant in explaining the variability in the response variable (radius_mean). Therefore, we can infer that all predictors have statistically significant coefficients.
+
+The model's goodness of fit can be evaluated by comparing the null deviance (before adding predictors) and the residual deviance (after adding predictors). A significant reduction in deviance suggests that the predictors explain a significant amount of variability in the response variable.
+
+Coefficients interpretation:
+    Perimeter_Mean:
+        For every one-unit increase in perimeter_mean, the radius_mean is expected to increase by 0.1566 units, on average, holding other predictors constant.
+    Area Mean:
+        For every one-unit increase in area_mean, the radius_mean is expected to decrease by 0.0002844 units, on average, holding other predictors constant.
+    Smoothness_Mean:
+        For every one-unit increase in smoothness_mean, the radius_mean is expected to increase by 1.214 units, on average, holding other predictors constant.
+    Compactness_Mean:
+        For every one-unit increase in compactness_mean, the radius_mean is expected to decrease by 4.780 units, on average, holding other predictors constant.
+    Concavity_Mean:
+        For every one-unit increase in concavity_mean, the radius_mean is expected to decrease by 0.8079 units, on average, holding other predictors constant.
+    Fractal_Dimension_Mean:
+        For every one-unit increase in fractal_dimension_mean, the radius_mean is expected to increase by 3.204 units, on average, holding other predictors constant.
+        
+The equation for the adjusted hyperplane of radius_mean adjusted, based on the model summary is:
+
+$$
+\begin{align*}
+\text{radius_mean} &= 0.1669 + 0.1566 \times \text{perimeter_mean} \\
+&\quad - 0.0002844 \times \text{area_mean} + 1.214 \times \text{smoothness_mean} \\
+&\quad - 4.780 \times \text{compactness_mean} - 0.8079 \times \text{concavity_mean} \\
+&\quad + 3.204 \times \text{fractal_dimension_mean}
+\end{align*}
+$$
+
+#### Analysis of the linear submodel
+
+#### SQRE/SSResiduals (submodel) 
+
+```{r}
+sqre_2 <- sum(residuals(step_result)^2)
+sqre_2
+```
+#### R-squared(submodel)
+```{r}
+r_squared_2 <- 1 - step_result$deviance/step_result$null.deviance
+r_squared_2
+```
+
+#### Adjusted R-squared (submodel)
+
+```{r}
+n <- nrow(mean_features)
+formula <- formula(step_result)
+# Count the number of predictors in the formula
+k <- length(attr(terms(formula), "term.labels")) - 1  # Exclude the response term
+adjusted_r_squared_2 <- 1 - ((1 - r_squared_2) * (n - 1) / (n - k - 1))
+adjusted_r_squared_2
+```
+#### Mean squared error (submodel)
+
+```{r}
+mse_2 <- sqre_2 / n
+mse_2
+```
+#### Confidence intervals
+
+```{r}
+confint(step_result)
+```
+#### Residuals analysis (submodel)
+
+#### Residuals vs. Fitted Values Plot 
+```{r}
+residuals <- residuals(step_result)
+fitted_values <- fitted(step_result)
+residuals_df <- data.frame(Fitted_Values = fitted_values, Residuals = residuals)
+ggplot(residuals_df, aes(x = Fitted_Values, y = Residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +  # Add a dashed horizontal line at y = 0
+  labs(x = "Fitted Values", y = "Residuals", title = "Residuals vs. Fitted Values Plot")
+```
+The points in the plot represent the residuals for each observation in the dataset.
+The horizontal axis represents the fitted values (predicted values) from the regression model.
+The vertical axis represents the residuals.
+Ideally, the residuals should be randomly scattered around the horizontal line at y = 0.
+
+From the plot the residuals appear to be randomly scattered around the horizontal line at y = 0 without any clear pattern as the fitted values change, and the spread of residuals remains relatively consistent across the range of fitted values, suggesting that the linear regression model is adequately capturing the underlying relationship between the predictors and the response variable.
+
+#### Normal Q-Q (Quantile-Quantile) Plot
+
+```{r}
+ggplot(residuals_df, aes(sample = Residuals)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(x = "Theoretical Quantiles", y = "Standardized Residuals", title = "Normal Q-Q Plot")
+```
+The normal Q-Q (quantile-quantile) plot is a diagnostic tool used to assess whether the distribution of the residuals from a regression model follows a normal (Gaussian) distribution.
+
+The x-axis of the plot represents the theoretical quantiles of a standard normal distribution, while the y-axis represents the standardized residuals (residuals divided by their standard deviation), which should ideally follow a standard normal distribution if the regression model assumptions are met.
+
+In the normal quantile-quantile (Q-Q) plot of the residuals, the observed residuals adhere to the theoretical quantiles for the most part, indicating substantial conformity to the normal distribution assumption. However, some deviations from the expected pattern are discernible at the extremities of the plot. Overall, the normal Q-Q plot suggests that the residuals exhibit a reasonable level of adherence to normality, with only a few discrepancies observed in certain regions of the distribution.
+
+#### Residuals vs. Leverage Plot
+
+```{r}
+leverage <- hatvalues(step_result)
+plot_data <- data.frame(Residuals = residuals, Leverage = leverage)
+
+ggplot(plot_data, aes(x = Leverage, y = Residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(x = "Leverage", y = "Standardized Residuals", title = "Residuals vs. Leverage Plot")
+```
+The plot displays the standardized residuals against the leverage values. It helps to identify influential observations, particularly those with high leverage and large residuals. In this plot, the dashed red line indicates the zero-residual line, helping to identify observations with residuals deviating significantly from zero. High leverage points, combined with large residuals, may have a considerable impact on the model's fit and should be investigated further for potential outliers or influential data points.
+
+We can observe that there is some outliers in terms of residuals or leverage. Outliers in the plot may indicate problematic observations that are exerting undue influence on the regression model.
+
+
+#### Scale-Location Plot
+
+```{r}
+sqrt_std_residuals <- sqrt(abs(rstandard(step_result)))
+plot_data <- data.frame(Fitted_Values = fitted_values, SQRT_Std_Residuals = sqrt_std_residuals)
+
+ggplot(plot_data, aes(x = Fitted_Values, y = SQRT_Std_Residuals)) +
+  geom_point() +
+  geom_smooth(method = "loess", se = FALSE, color = "blue", formula = y ~ x) +
+  labs(x = "Fitted Values", y = "SQRT Standardized Residuals", title = "Scale-Location Plot")
+```
+The scale-location plot, also known as the spread-location plot or square root of standardized residuals plot, is a diagnostic plot used to assess  that the variance of the errors (or residuals) is constant across the range of fitted values.
+
+We can observe from the plot that the smooth trend line, is not approximately horizontal.
+The slight slope in the line may indicate that the variability of the residuals is not entirely constant but rather increases or decreases as the fitted values change. This could suggest a mild violation of the assumption that the variance of the residuals is constant across the range of fitted values.
+
+
+#### Comparison of full model vs submodel
+
+#### Dataframe comparing actual values with the fitted (full model vs submodel)
+
+```{r}
+actual_values <- mean_features$radius_mean 
+fitted_values <- fitted(mlr_model)
+comparison_df <- data.frame(Actual = actual_values, Fitted = fitted_values)
+comparison_df <- comparison_df %>%
+  mutate(Absolute_Difference = abs(Actual - Fitted))
+head(comparison_df)
+```
+```{r}
+actual_values <- mean_features$radius_mean 
+fitted_values <- fitted(step_result)
+comparison_df2 <- data.frame(Actual = actual_values, Fitted = fitted_values)
+comparison_df2 <- comparison_df2 %>%
+  mutate(Absolute_Difference = abs(Actual - Fitted))
+head(comparison_df2)
+```
+```{r}
+total_absolute_difference <- sum(comparison_df$Absolute_Difference)
+total_absolute_difference
+```
+```{r}
+total_absolute_difference2 <- sum(comparison_df2$Absolute_Difference)
+total_absolute_difference2
+```
+#### Compare the full model vs submodel with anova (F test)
+
+```{r}
+anova_result <- anova(mlr_model, step_result)
+anova_result
+```
+Model 1 has 559 degrees of freedom and a residual deviance of 4.3900.
+Model 2 has 562 degrees of freedom and a residual deviance of 4.4062.
+The difference in degrees of freedom between Model 1 and Model 2 is -3.
+The difference in deviance between Model 1 and Model 2 is -0.016137.
+Based on the deviance comparison, Model 1 is slightly better than Model 2,
+but the difference is very small.
+Sub model achieves a comparable level of explanatory power with fewer predictors, which aligns with the principle of parsimony. The addition of unnecessary predictors in the full model may introduce complexity without significant improvement in model performance.
+
+Therefore, from a parsimonious perspective, selecting Model 2 (sub model) would be more appropriate as it adheres to the principle of simplicity without compromising explanatory capacity.
+
+
+### Logistic Regression (LR)
+
+```{r}
+head(data)
+```
+
+#### Diagnosis one hot encoding column
+
+```{r}
+data$diagnosis_ohe <- ifelse(data$diagnosis == "B", 0, 1)
+# Reorder columns
+data <- data[, c("diagnosis", "diagnosis_ohe", setdiff(names(data), c("diagnosis", "diagnosis_ohe")))]
+tail(data)
+```
+
+#### Data for logistic reg.
+
+```{r}
+data_logreg <- data[, !(names(data) %in% c("diagnosis", "diagnosis_factored"))]
+data_logreg2 <- data_logreg[, grep("_mean", names(data_logreg))]
+data_logreg2 <- cbind(data_logreg[, "diagnosis_ohe", drop = FALSE], data_logreg2)
+# Select only the predictor variables (excluding the response variable if present)
+predictors <- data_logreg[, !(names(data_logreg) %in% c("diagnosis_ohe"))]
+
+# Standardize the predictor variables
+scaled_predictors <- scale(predictors)
+
+# If needed, you can convert the scaled predictors back to a data frame
+scaled_predictors_df <- as.data.frame(scaled_predictors)
+
+scaled_data <- cbind(diagnosis_ohe = data_logreg$diagnosis_ohe, scaled_predictors_df)
+
+tail(scaled_data)
+```
+
+
+#### First using all features as predictors
+
+```{r}
+log_reg_model <- glm(diagnosis_ohe ~ ., family = binomial(link = "logit"), data = data_logreg)
+summary(log_reg_model)
+```
+With all the features the model didnt converge!!!!
+This could be due to various reasons, such as high multicollinearity among predictors,
+separation in the data (this means that there exists a set of predictor values for which the outcome variable takes on only one of its possible values, resulting in perfect prediction), or numerical instability.
+
+#### Calculate Variance Inflation Factor
+
+```{r}
+vif_results <- vif(log_reg_model)
+vif_results
+```
+The Variance Inflation Factor (VIF) measures the extent to which the variance of an estimated regression coefficient is increased due to collinearity. Generally, a VIF value of 10 or higher indicates that multicollinearity may be present, suggesting potential multicollinearity among predictor variables.
+
+As the output shows we have huge values of VIF.
+
+#### Check the correlations all features
+```{r}
+# Calculate the correlation matrix
+correlation_matrix <- cor(data_logreg)
+# Display the correlation matrix as a table
+kable(correlation_matrix, caption = "Correlation Matrix of All Features") %>%
+  kable_styling(full_width = FALSE, font_size = 16)  # Adjust font size and width
+```
+
+
+
+```{r}
+
+mean_cols <- grep("_mean", names(data), value = TRUE)
+diag_mean_cols <- c(mean_cols, "diagnosis")
+se_cols <- grep("_se", names(data), value = TRUE)
+diag_se_cols <- c(se_cols, "diagnosis")
+worst_cols <- grep("_worst", names(data), value = TRUE)
+diag_worst_cols <- c(worst_cols, "diagnosis")
+
+diag_plus_mean_features <- data[, diag_mean_cols]
+diag_plus_se_features <- data[, diag_se_cols]
+diag_plus_worst_features <- data[, diag_worst_cols]
+```
+
+```{r, fig.width=15, fig.height=12}
+
+ggpairs(diag_plus_mean_features,
+        mapping = aes(colour = diagnosis, alpha = 0.2),
+        lower=list(combo=wrap("facethist",  
+        binwidth=0.5)),
+        progress = FALSE)
+```
+```{r, fig.width=15, fig.height=12}
+
+ggpairs(diag_plus_se_features,
+        mapping = aes(colour = diagnosis, alpha = 0.2),
+        lower=list(combo=wrap("facethist",  
+        binwidth=0.5)),
+        progress = FALSE)
+```
+
+```{r, fig.width=15, fig.height=12}
+
+ggpairs(diag_plus_worst_features,
+        mapping = aes(colour = diagnosis, alpha = 0.2),
+        lower=list(combo=wrap("facethist",  
+        binwidth=0.5)),
+        progress = FALSE)
+```
+
+#### Check high correlated predictors (all features)
+```{r}
+# Exclude the column "diagnosis_ohe"
+data_cor <- data_logreg[, !colnames(data_logreg) %in% "diagnosis_ohe"]
+
+correlation_matrix <- cor(data_cor)
+
+# Find pairs of columns with correlation greater than 0.8
+high_correlation_pairs <- which(correlation_matrix > 0.8 & lower.tri(correlation_matrix), arr.ind = TRUE)
+
+# List to store results
+higher_corr_with_diagnosis <- list()
+
+cat("Pairs of columns with correlation greater than 0.8:\n")
+for (i in 1:nrow(high_correlation_pairs)) {
+  col1 <- rownames(correlation_matrix)[high_correlation_pairs[i, 1]]
+  col2 <- colnames(correlation_matrix)[high_correlation_pairs[i, 2]]
+  cat(col1, "-", col2, "\n")
+}
+
+```
+
+#### Feature selection using Lasso Regression
+
+#### Perform cross validation to get optimal lambda
+```{r}
+Y <- data_logreg$diagnosis_ohe
+X <- data.matrix(data_logreg[, -which(names(data_logreg) %in% c("diagnosis_ohe"))])
+
+set.seed(123) 
+cv <- cv.glmnet(x = X, y = Y, alpha = 0, nfolds = 10)
+
+# Extract lambda values and cross-validated error
+lambda_values <- log(cv$lambda)
+cv_errors <- cv$cvm
+
+cv_data <- data.frame(lambda = lambda_values, cv_error = cv_errors)
+
+# The y-axis label "Cross-validated Error" typically refers to the mean-squared
+# error (MSE) obtained from cross-validation.
+ggplot(cv_data, aes(x = lambda, y = cv_error)) +
+  geom_line() +
+  geom_point() +
+  geom_vline(xintercept = log(cv$lambda.min), linetype = "dashed", color = "red") +
+  geom_vline(xintercept = log(cv$lambda.1se), linetype = "dashed", color = "blue") +
+  labs(x = expression(Log(lambda)), y = "Mean-Squared Error", title = "Cross-Validation Plot")
+
+lambda.min <- cv$lambda.min
+lambda.1se <- cv$lambda.1se
+```
+Lambda (λ) is the regularization parameter in lasso/ridge regression. It controls the strength of regularization applied to the coefficients.
+Cross-validation is used to select the optimal lambda value.
+The lambda value that minimizes the cross-validated error, often using metrics like mean squared error (MSE) is selected as the optimal lambda value.
+lambda.min represents the value of lambda that gives the minimum cross-validated error.
+This lambda value is often considered the optimal choice for the regularization parameter because it minimizes the prediction error on unseen data.
+
+lambda.1se represents the largest value of lambda within one standard error of the minimum cross-validated error.
+It provides a more parsimonious model (with fewer predictors) compared to lambda.min while still maintaining relatively low prediction error.
+
+
+```{r}
+
+Y <- data_logreg$diagnosis_ohe
+X <- data.matrix(data_logreg[, -which(names(data_logreg) %in% c("diagnosis_ohe"))])
+lasso_model <- glmnet(X, Y, alpha = 1, lambda = lambda.1se)
+
+# Extract coefficients
+lasso_coef <- coef(lasso_model)
+
+# Identify significant features (non-zero coefficients)
+significant_features <- which(lasso_coef != 0)
+
+significant_feature_names <- colnames(X)[significant_features]
+significant_feature_names <- na.omit(significant_feature_names)
+significant_feature_names <- as.character(significant_feature_names)
+significant_feature_names
+
+```
+
+Lasso logistic regression with cross-validation helps in building a parsimonious model by selecting the most relevant predictors and simultaneously determining the optimal level of regularization to prevent overfitting. This approach is valuable in feature selection and model interpretation, particularly in high-dimensional datasets where there are many potential predictors.
+
+Lasso regularization encourages sparsity in the coefficient estimates, some coefficients may shrink to exactly zero.
+Predictors with non-zero coefficients in the lasso logistic regression model are considered significant features.
+By identifying these features, we can understand which variables are most important in predicting the outcome and potentially simplify the model by removing irrelevant predictors.
+
+#### Use the significant features in Log Reg.
+
+```{r}
+formula_string <- paste("diagnosis_ohe ~", paste(significant_feature_names, collapse = " + "))
+formula_log <- as.formula(formula_string)
+log_reg_model2 <- suppressWarnings(glm(formula = formula_log, family = binomial(link = "logit"), data = data_logreg))
+summary(log_reg_model2)
+
+```
+The coefficients represent the estimated log-odds of the outcome variable for a one-unit change in the corresponding predictor variable, holding other predictors constant.
+The significance of each coefficient is determined by its associated p-value. Coefficients with lower p-values are considered statistically significant and are more likely to have a meaningful effect on the outcome.
+
+The significant features from this model are those for which the p-value is less than the chosen significance level of 0.05. In the provided model summary, the features with p-values less than 0.05 are considered statistically significant.
+
+AIC (Akaike Information Criterion): Represents the AIC value of the model. AIC is a measure of the model's goodness of fit, balancing the model's complexity and its fit to the data. Lower AIC values indicate better models.
+
+#### Vif full model
+```{r}
+vif_results <- vif(log_reg_model2)
+vif_results
+```
+#### Accuracy full model
+```{r}
+fitted_values <- fitted(log_reg_model2)
+pr <- ifelse(fitted_values > 0.5, 1, 0)
+acc = mean(pr == data_logreg$diagnosis_ohe)
+acc
+```
+#### Sequential deletion algorithm (with AIC as base)
+
+```{r}
+suppressWarnings(step_model <- step(log_reg_model2, direction = "backward"))
+```
+```{r}
+summary(step_model)
+```
+The overall model suggests that the coefficients for all predictors have associated p-values (Pr(>|z|)) that are less than the conventional significance level of 0.05. This indicates that all predictor variables are statistically significant in explaining the variability in the response variable (diagnosis). Therefore, we can infer that all predictors have statistically significant coefficients.
+
+Coefficients Analysis:
+The coefficient estimates represent the change in the log odds of the outcome variable for a one-unit increase in the corresponding predictor variable, maintaining other predictors constant.
+
+The logistic regression model's adjusted hyperplane equation can be represented as follows:
+
+$$
+\text{logit}(\hat{p}) = -35.36245 \\
+- 0.86430 \times \text{radius_mean} \\
++ 40.67821 \times \text{symmetry_mean} \\
++ 0.26246 \times \text{texture_worst} \\
++ 0.30773 \times \text{perimeter_worst}
+$$
+
+The expression for p(x), which represents the probability of the outcome given the predictor variables x, can be derived from the logistic regression model using the sigmoid function:
+
+$$
+p(x)_{\text{logistic}} = \frac{1}{1 + e^{-\left(-35.36245 - 0.86430 \times \text{radius_mean} + 40.67821 \times \text{symmetry_mean} + 0.26246 \times \text{texture_worst} + 0.30773 \times \text{perimeter_worst}\right)}}
+$$
+
+#### Compare the full model vs submodel with anova (F test)
+```{r}
+anova_result <- anova(log_reg_model2, step_model)
+anova_result
+```
+
+The change in deviance (Model 2 - Model 1) is -0.6091, with a decrease in degrees of freedom by 1.
+
+Since the change in deviance is small and the decrease in degrees of freedom is only by 1, it suggests that removing the predictor variable "symmetry_worst" (from full to submodel) doesn't result in a significant decrease in model fit. Therefore, we can conclude that submodel, which is more parsimonious, is a good enough model compared to full model. This conclusion is based on the principle of parsimony, which favors simpler models when they provide comparable fit to more complex models.
+
+
+#### Logistic regression plots for each specified predictor variable
+```{r plot_chunk, fig.width=10, fig.height=6}
+
+predictors <- c("radius_mean", "symmetry_mean", "texture_worst", "perimeter_worst")
+
+# Store plots
+plots <- list()
+
+# Predict probabilities
+  pred_probs <- predict(step_model, type = "response") # gives p(x)
+  pred_probs_bin <- ifelse(pred_probs > 0.5, 1, 0)
+  
+for (predictor in predictors) {
+  
+  # Create a dataframe with predictor and predicted probabilities
+  plot_data <- data.frame(predictor = data_logreg[[predictor]], pred_prob = pred_probs_bin, outcome = data_logreg$diagnosis_ohe)
+  plot_data$outcome <- factor(plot_data$outcome)
+  
+  p <- ggplot(plot_data, aes(x = predictor, y = pred_prob)) +
+    geom_point() +
+    geom_smooth(method = "glm", method.args = list(family = "binomial"), formula = y ~ x) +
+    labs(title = paste("Logistic Regression for", predictor),
+         x = predictor) +
+    theme_minimal()
+  
+  # Store plot in the list
+  plots[[predictor]] <- p
+}
+
+# Plot the subplots
+grid.arrange(grobs = plots, ncol = 2)
+```
+
+The code above generates a series of logistic regression plots, each showing the relationship between a predictor variable and the predicted probabilities of the outcome variable being 1, based on a logistic regression model. These plots help visualize how each predictor influences the probability of the outcome.
+
+#### Alternative accuracy calculation
+```{r}
+ac2 = mean(pred_probs_bin == data_logreg$diagnosis_ohe)
+ac2
+```
+
+
+#### Residuals analysis
+
+#### Residuals vs Fitted
+```{r}
+plot(step_model, which = 1)
+```
+#### Normal Q-Q plot
+
+```{r}
+plot(step_model, which = 2)
+```
+####  Scale-Location plot
+```{r}
+plot(step_model, which = 3)
+```
+#### Residuals vs Leverage
+```{r}
+plot(step_model, which = 5)
+```
+#### Odds ratios
+
+$$
+OddsRatio_{x_i} = e^{\beta_i}
+$$
+```{r}
+coefficients <- coef(step_model)
+
+# Calculate odds ratios
+odds_ratios <- exp(coefficients)
+
+odds_ratios
+```
+
+#### Odds ratios using logitor()
+```{r}
+log_reg_model_logitor <- suppressWarnings(logitor(formula = formula(step_model),
+                                 data = data_logreg))
+log_reg_model_logitor$oddsratio
+```
+OddsRatio: represents the odds ratio for each predictor variable. The odds ratio indicates how the odds of the outcome change with a one-unit increase in the predictor variable, holding all other variables constant.
+
+#### Log-likelihood
+```{r}
+likelihood_log <- logLik(step_model)
+likelihood_log
+```
+The log-likelihood value represents the logarithm of the likelihood function, which is a measure of how well the model fits the data.
+A higher log-likelihood value indicates a better fit of the model to the data.
+The actual log-likelihood value for a given model is mostly meaningless, but it’s useful for comparing two or more models..
+
+
+#### Likelihood ratio test statistic
+```{r}
+step_formula <- formula(step_model)
+predictor_names <- all.vars(step_formula)[-1]  # Exclude the response variable
+predictor_names
+```
+```{r}
+
+# Initialize empty vectors to store p-values and likelihood ratio test results
+p_values <- numeric(length(predictor_names))
+lr_test_results <- list()
+
+# Perform likelihood ratio test iteratively
+for (i in seq_along(predictor_names)) {
+  # Create formula string excluding the i-th predictor
+  reduced_formula <- paste("diagnosis_ohe ~", paste(setdiff(predictor_names, predictor_names[i]),
+                                                    collapse = " + "))
+  
+  # Fit the full and reduced models
+  full_model <- suppressWarnings(glm(formula = step_formula, family = binomial(link = "logit"), data = data_logreg))
+  reduced_model <- suppressWarnings(glm(formula = as.formula(reduced_formula), family = binomial(link = "logit"), data = data_logreg))
+  
+  # Calculate log-likelihood values for full and reduced models
+  loglik_full <- logLik(full_model)
+  loglik_reduced <- logLik(reduced_model)
+  
+  # Calculate likelihood ratio test statistic
+  lr_test_statistic <- -2 * (loglik_reduced - loglik_full)
+  
+  # Calculate degrees of freedom
+  df <- attr(loglik_full, "df") - attr(loglik_reduced, "df")
+  
+  # Calculate p-value
+  p_value <- pchisq(lr_test_statistic, df, lower.tail = FALSE)
+  
+  # Store the p-value and likelihood ratio test result
+  p_values[i] <- p_value
+  lr_test_results[[i]] <- list(lr_test_statistic = lr_test_statistic, df = df, p_value = p_value)
+  
+  # Print likelihood ratio test result
+  cat("Likelihood ratio test result for removing", predictor_names[i], ":\n")
+  cat("Test statistic:", lr_test_statistic, "\n")
+  cat("Degrees of freedom:", df, "\n")
+  cat("p-value:", p_value, "\n\n")
+}
+
+```
+
+
+For example:
+
+Likelihood ratio test result for removing radius_mean :
+Test statistic: 6.638809 
+Degrees of freedom: 1 
+p-value: 0.009978062 
+
+The test statistic value is calculated based on the difference in the log-likelihoods of the full model and the reduced model. It measures how much better the full model fits the data compared to the reduced model.
+
+The degrees of freedom (df) represent the difference in the number of parameters estimated between the full and reduced models. Here, df is 1, indicating that one parameter (associated with radius_mean) is removed when transitioning from the full model to the reduced model.
+
+The p-value represents the probability of observing a test statistic as extreme as the one obtained, assuming that the null hypothesis (i.e., removing radius_mean has no effect on the model) is true. A low p-value (typically below a chosen significance level, such as 0.05) suggests that the null hypothesis should be rejected, indicating that the predictor (radius_mean) is statistically significant in predicting the outcome variable.
+
+Overall, based on these results, we can conclude that all the predictors (radius_mean, symmetry_mean, texture_worst and perimeter_worst) are statistically significant in the model. Removing any of these predictors results in a significant decrease in the model fit, as indicated by the low p-values in the likelihood ratio tests.

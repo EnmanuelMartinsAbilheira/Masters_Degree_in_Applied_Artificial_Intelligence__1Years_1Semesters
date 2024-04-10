@@ -1,0 +1,457 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+## Imports
+
+```{r}
+suppressWarnings({
+  library(tidyverse)
+  library(skimr) 
+  library(ggplot2)
+  library(corrplot)
+  library(knitr) 
+  library(kableExtra)
+  library(glmnet)
+  library(conflicted)
+  library(factoextra)
+  library(clValid)
+  library(ggrepel)
+  suppressMessages(conflict_prefer("select", "dplyr"))
+})
+```
+
+## Read the dataset
+
+```{r}
+data<- read.csv("data.csv", header = TRUE)
+head(data)
+
+```
+
+```{r}
+data$X <- NULL
+data$id <- NULL
+head(data)
+
+```
+
+```{r}
+diagnosis <- as.numeric(data$diagnosis == "M") # Vector with: B = 0, M = 1
+# diagnosis
+```
+
+```{r}
+X <- data.matrix(data[, -which(names(data) %in% c("diagnosis"))])
+```
+
+#### Check if the data need to be scaled before performing PCA or Clustering
+
+```{r}
+# Calculate mean of each column in X
+mean_values <- colMeans(X, na.rm = TRUE)
+
+# Calculate standard deviation of each column in X
+std_dev_values <- apply(X, 2, sd, na.rm = TRUE)
+
+# Combine to df
+summary_stats <- data.frame(
+  Mean = mean_values,
+  StdDev = std_dev_values
+)
+
+summary_stats
+
+```
+
+The input variables use different units of measurement.
+The input variables have significantly different variances.
+Its better to apply scaling.
+
+
+## Hierarchical clustering and K-means on the original scaled data
+
+### Hierarchical clustering
+
+#### Analysis of linkage methods (clValid)
+```{r}
+X <- data[, -which(names(data) %in% c("diagnosis"))]
+scaled_X <- scale(X)
+# Retrieve row names from the original data
+rownames_scaled_X <- rownames(X)
+
+# Assign row names back to the scaled data
+rownames(scaled_X) <- rownames_scaled_X
+
+clmethods <- c("hierarchical")
+linkage_methods <- c("single", "complete", "average", "ward")
+
+# Perform cluster validation for different linkage methods
+results_list <- list()
+for (method in linkage_methods) {
+  result <- clValid(scaled_X, nClust = 2:4,
+                    clMethods = clmethods,
+                    method = method,
+                    validation = "internal",
+                    maxitems = 600,
+                    metric = "euclidean")
+  results_list[[method]] <- result
+}
+
+# Summary
+for (method in linkage_methods) {
+  cat("Linkage method:", method, "\n")
+  summary(results_list[[method]])
+}
+
+```
+
+After conducting some testing and analysis, we have reached the conclusion that the most suitable linkage method for our purposes is Ward's method.
+
+```{r}
+X <- data[, -which(names(data) %in% c("diagnosis"))]
+scaled_X <- scale(X)
+# Retrieve row names from the original data
+rownames_scaled_X <- rownames(X)
+# Assign row names back to the scaled data
+rownames(scaled_X) <- rownames_scaled_X
+
+# Distance
+X.dist <- dist(scaled_X, method="euclidean")
+
+hc.X <- hclust(d = X.dist, method = "ward.D")
+hc.X
+```
+
+#### Dendogram
+
+```{r}
+plot(hc.X)
+rect.hclust(hc.X, k = 2, border = 2:5)
+```
+
+```{r}
+fviz_dend(hc.X, cex = 0,2)
+```
+
+#### Clusters
+
+```{r}
+hc.clusters <- cutree(hc.X, k = 2)
+# Compare cluster membership to actual diagnosis
+hc.table <- table(hc.clusters, diagnosis)
+
+# Convert table to a data frame for easier manipulation
+hc.cluster_df <- as.data.frame.matrix(hc.table)
+
+# Add row and column names
+row.names(hc.cluster_df) <- paste0("Cluster ", row.names(hc.cluster_df))
+colnames(hc.cluster_df) <- c("Actual Benign", "Actual Malignant")
+
+kable(hc.cluster_df, caption = "Comparison of Cluster Membership with Diagnoses",
+      align = "c", format = "html", digits = 2, 
+      col.names = c("Actual Benign", "Actual Malignant"),
+      caption.short = "Cluster vs. Actual Diagnosis")
+
+```
+
+#### Visualize clusters
+
+```{r}
+rownames(scaled_X) <- paste(data$diagnosis, 1:dim(data)[1], sep = "_")
+fviz_cluster(list(data = scaled_X, cluster = hc.clusters), main = "Hierarchical Clustering")
+
+```
+#### Concatenate cluster id to dataframe
+```{r}
+df_with_clusters <- cbind(scaled_X, hc.clusters)
+
+```
+
+#### Get mean and standard deviation for all variables by cluster
+```{r}
+df_with_clusters <- as.data.frame(df_with_clusters)
+
+cluster_stats <- df_with_clusters %>%
+  group_by(hc.clusters) %>%
+  summarise_all(list(m = mean, std = sd))
+
+# Reorder columns
+cluster_stats <- cluster_stats %>%
+  select(hc.clusters, order(colnames(.)[-1]))
+
+cluster_stats
+```
+
+### Kmeans
+
+#### Check best starting k
+```{r}
+X <- data[, -which(names(data) %in% c("diagnosis"))]
+scaled_X <- scale(X)
+# Retrieve row names from the original data
+rownames_scaled_X <- rownames(X)
+# Assign row names back to the scaled data
+rownames(scaled_X) <- rownames_scaled_X
+
+# Distance
+X.dist <- dist(scaled_X, method="euclidean")
+
+# Calculate how many clusters needed
+fviz_nbclust(scaled_X, kmeans, method="wss") +
+  labs(subtitle = "Elbow Method")
+
+fviz_nbclust(scaled_X, kmeans, method = "silhouette") +
+  labs(subtitle = "Silhouette Method")
+
+
+```
+#### Analysis with clValid
+
+```{r}
+X <- data[, -which(names(data) %in% c("diagnosis"))]
+scaled_X <- scale(X)
+# Retrieve row names from the original data
+rownames_scaled_X <- rownames(X)
+
+# Assign row names back to the scaled data
+rownames(scaled_X) <- rownames_scaled_X
+
+clmethods <- c("kmeans")
+
+intern <- clValid(scaled_X, nClust = 2:4,
+              clMethods = clmethods, validation = "internal",  maxitems = 600,
+              metric = "euclidean")
+# Summary
+summary(intern)
+```
+
+
+Based on our analysis of the K-means clustering algorithm, we have determined that the optimal number of initial clusters (k) to yield meaningful results is 2.
+
+#### Perform Kmeans
+
+```{r}
+set.seed(123)
+km.res <- kmeans(scaled_X, centers = 2, nstart = 25)
+
+```
+
+
+#### Visualize clusters
+
+```{r}
+km.clusters <- km.res$cluster
+rownames(scaled_X) <- paste(data$diagnosis, 1:dim(data)[1], sep = "_")
+fviz_cluster(list(data = scaled_X, cluster = km.clusters), main = "K-means Clustering")
+
+```
+#### Get a zoom in for the frontier of the 2 clusters
+
+```{r}
+# Create the cluster plot
+cluster_plot <- fviz_cluster(
+  list(data = scaled_X, cluster = km.clusters),
+  geom = "point",
+  main = "K-means Clustering (Zoom In)",
+  ellipse.type = "convex",
+  show.clust.cent = TRUE,
+  palette = "jco",
+  repel = TRUE,
+  ggtheme = theme_minimal()
+) + 
+theme(
+  plot.title = element_text(size = 20, face = "bold"),
+  axis.title = element_text(size = 16),
+  axis.text = element_text(size = 14)
+) +
+
+coord_cartesian(xlim = c(-5, 5), ylim = c(-15, 6))  # zoom in the frontier
+
+# Increase the size of the plot
+options(repr.plot.width = 8, repr.plot.height = 6)
+
+cluster_plot
+```
+#### Concatenate cluster id to dataframe
+```{r}
+df_with_clusters <- cbind(scaled_X, km.clusters)
+
+```
+
+#### Get mean and standard deviation for all variables by cluster
+
+```{r}
+df_with_clusters <- as.data.frame(df_with_clusters)
+
+cluster_stats <- df_with_clusters %>%
+  group_by(km.clusters) %>%
+  summarise_all(list(m = mean, std = sd))
+
+# Reorder columns
+cluster_stats <- cluster_stats %>%
+  select(km.clusters, order(colnames(.)[-1]))
+
+cluster_stats
+```
+
+#### Check cluster vs Diagnosis
+
+```{r}
+# Compare cluster membership to actual diagnosis
+km.table <- table(km.clusters, diagnosis)
+
+# Convert table to a data frame for easier manipulation
+km.cluster_df <- as.data.frame.matrix(km.table)
+
+# Add row and column names
+row.names(km.cluster_df) <- paste0("Cluster ", row.names(km.cluster_df))
+colnames(km.cluster_df) <- c("Actual Benign", "Actual Malignant")
+
+kable(km.cluster_df, caption = "Comparison of Cluster Membership with Diagnoses",
+      align = "c", format = "html", digits = 2, 
+      col.names = c("Actual Benign", "Actual Malignant"),
+      caption.short = "Cluster vs. Actual Diagnosis")
+```
+
+
+
+## Check distinct algorithms with clvalid
+
+```{r}
+X <- data[, -which(names(data) %in% c("diagnosis"))]
+scaled_X <- scale(X)
+# Retrieve row names from the original data
+rownames_scaled_X <- rownames(X)
+
+# Assign row names back to the scaled data
+rownames(scaled_X) <- rownames_scaled_X
+
+clmethods <- c("hierarchical","kmeans","pam")
+
+intern <- clValid(scaled_X, nClust = 2:4,
+              clMethods = clmethods, validation = "internal",  maxitems = 600,
+              metric = "euclidean", method = "ward")
+# Summary
+summary(intern)
+```
+
+```{r}
+plot(intern)
+```
+
+```{r}
+# Stability measures
+stab <- clValid(scaled_X, nClust = 2:4, clMethods = clmethods,
+                validation = "stability")
+# Display only optimal Scores
+optimalScores(stab)
+
+```
+
+
+## PCA
+
+```{r}
+pca <- prcomp(x = X, scale = TRUE)
+summary(pca)
+```
+
+#### Explain variance
+
+```{r}
+# Calculate variability of each component
+pca.var <- pca$sdev^2
+
+# Variance explained by each principal component: pve
+pve <- pca.var / sum(pca.var)
+
+# Create a data frame for plotting
+plot_data <- data.frame(
+  PC = 1:length(pve),
+  PVE = pve,
+  Cumulative_PVE = cumsum(pve)
+)
+
+# Plot variance explained for each principal component
+ggplot(plot_data, aes(x = PC, y = PVE)) +
+  geom_line() +
+  labs(x = "Principal Component", 
+       y = "Proportion of Variance Explained By Component") +
+  scale_x_continuous(breaks = seq(0, 30, by = 2), labels = seq(0, 30, by = 2))
+
+# Plot cumulative proportion of variance explained
+ggplot(plot_data, aes(x = PC, y = Cumulative_PVE)) +
+  geom_line() +
+  labs(x = "Principal Component", 
+       y = "Cumulative Proportion of Variance Explained") +
+  scale_x_continuous(breaks = seq(0, 30, by = 2), labels = seq(0, 30, by = 2))
+
+```
+
+```{r}
+# Calculate cumulative proportion of variance explained
+cumulative_pve <- cumsum(pve)
+
+# Find the index where cumulative proportion of variance exceeds 80%
+index <- which(cumulative_pve >= 0.8)[1]
+
+# Number of principal components required
+num_components <- index
+
+# Print the result
+print(num_components)
+
+```
+
+The minimum number of principal components required to explain >80% of the
+variance of the data is 5.
+
+#### Perform hierarchical clustering on PCA results
+
+```{r}
+
+# Hierarchical Clustering
+hc <- hclust(dist(pca$x[, 1:5]), method = "ward.D")
+# Cut tree so that it has 2 clusters
+hc.clusters <- cutree(hc, k = 2)
+
+# Compare cluster membership to actual diagnoses
+hc.table <- table(hc.clusters, diagnosis)
+
+# Convert table to a data frame for easier manipulation
+hc.cluster_df <- as.data.frame.matrix(hc.table)
+
+# Add row and column names
+row.names(hc.cluster_df) <- paste0("Cluster ", row.names(hc.cluster_df))
+colnames(hc.cluster_df) <- c("Actual Benign", "Actual Malignant")
+
+kable(hc.cluster_df, caption = "Comparison of Cluster Membership with Diagnoses",
+      align = "c", format = "html", digits = 2, 
+      col.names = c("Actual Benign", "Actual Malignant"),
+      caption.short = "Cluster vs. Actual Diagnosis")
+```
+
+#### Perform kmeans on PCA results
+```{r}
+
+k <- 2 
+kmeans_result <- kmeans(pca$x[, 1:5], centers = k)
+
+# Compare cluster membership to actual diagnoses
+hc.table <- table(kmeans_result$cluster, diagnosis)
+
+# Convert table to a data frame for easier manipulation
+hc.cluster_df <- as.data.frame.matrix(hc.table)
+
+# Add row and column names
+row.names(hc.cluster_df) <- paste0("Cluster ", row.names(hc.cluster_df))
+colnames(hc.cluster_df) <- c("Actual Benign", "Actual Malignant")
+
+kable(hc.cluster_df, caption = "Comparison of Cluster Membership with Diagnoses",
+      align = "c", format = "html", digits = 2, 
+      col.names = c("Actual Benign", "Actual Malignant"),
+      caption.short = "Cluster vs. Actual Diagnosis")
+
+```
