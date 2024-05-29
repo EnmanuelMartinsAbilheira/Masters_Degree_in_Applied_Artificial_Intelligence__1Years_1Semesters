@@ -20,7 +20,7 @@ Welcome to the repository for the Master's Degree in Applied Artificial Intellig
 - [High Performance Computing (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence__1Years_2Semesters/tree/main/Computação%20de%20alto%20desempenho)
 - [Embedded AI Systems (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Sistemas%20Embebidos%20para%20IA)
 - [Natural Language Processing (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Processamento%20de%20Linguagem%20Natural)
-- [Research Methods for AI (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Métodos%20de%20Pesquisa%20para%20IA)
+- [Research Methods for AI (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence__1Years_2Semesters/tree/main/Métodos%20de%20Pesquisa%20para%20IA)
 
 
 ### Year 2
