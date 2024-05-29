@@ -14,7 +14,7 @@ Welcome to the repository for the Master's Degree in Applied Artificial Intellig
 - [Computational Tools for Data Science (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Ferramentas%20Computacionais%20para%20ciência%20dos%20dados)
 
 
-#### Semester 2 **(Has Not Started Yet)**
+#### Semester 2 
 - [Ethics of AI (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Ética%20da%20IA)
 - [Deep Learning for Computer Vision (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Aprendizagem%20Profunda%20para%20a%20visão%20por%20computador)
 - [High Performance Computing (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Computação%20de%20alto%20desempenho)
@@ -25,10 +25,10 @@ Welcome to the repository for the Master's Degree in Applied Artificial Intellig
 
 ### Year 2
 
-#### Semester 1
+#### Semester 1 **(Has Not Started Yet)**
 - *Course titles to be announced, Coming Soon*
 
-#### Semester 2
+#### Semester 2 **(Has Not Started Yet)**
 - *Course titles to be announced, Coming Soon*
 
 
