@@ -15,7 +15,7 @@ Welcome to the repository for the Master's Degree in Applied Artificial Intellig
 
 
 #### Semester 2 
-- [Ethics of AI (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence/tree/main/Ética%20da%20IA)
+- [Ethics of AI (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence__1Years_2Semesters/tree/main/Ética%20da%20IA)
 - [Deep Learning for Computer Vision (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence__1Years_2Semesters/tree/main/Aprendizagem%20Profunda%20para%20a%20visão%20por%20computador)
 - [High Performance Computing (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence__1Years_2Semesters/tree/main/Computação%20de%20alto%20desempenho)
 - [Embedded AI Systems (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence__1Years_2Semesters/tree/main/Sistemas%20Embebidos%20para%20IA)
