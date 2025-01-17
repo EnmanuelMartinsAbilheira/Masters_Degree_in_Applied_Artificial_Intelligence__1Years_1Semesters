@@ -18,17 +18,21 @@ Welcome to the repository for the Master's Degree in Applied Artificial Intellig
 - [Ethics of AI (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence__1Years_2Semesters/tree/main/Ética%20da%20IA)
 - [Deep Learning for Computer Vision (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence__1Years_2Semesters/tree/main/Aprendizagem%20Profunda%20para%20a%20visão%20por%20computador)
 - [High Performance Computing (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence__1Years_2Semesters/tree/main/Computação%20de%20alto%20desempenho)
-- [Embedded AI Systems (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence__1Years_2Semesters/tree/main/Sistemas%20Embebidos%20para%20IA)
 - [Natural Language Processing (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence__1Years_2Semesters/tree/main/Processamento%20de%20Linguagem%20Natural)
 - [Research Methods for AI (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence__1Years_2Semesters/tree/main/Métodos%20de%20Pesquisa%20para%20IA)
 
 
+
 ### Year 2
 
-#### Semester 1 **(Has Not Started Yet)**
-- *Course titles to be announced, Coming Soon*
+#### Semester 1
+- [Artificial Inteligence for Cybersecurity (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence__2Years_1Semesters/tree/main/AI_For_Cybersecurity)
+- [Affective Computing on AI (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence__2Years_1Semesters/tree/main/Affective_Computing_on_AI)
+- [Collaborative Robots & Intelligent AGVs (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence__2Years_1Semesters/tree/main/Collaborative_Robots_%26_Intelligent_AGVs)
+- [Embedded AI Systems (MIAA)](https://github.com/EnmanuelMartinsAbilheira/Masters_Degree_in_Applied_Artificial_Intelligence__2Years_1Semesters/tree/main/Embedded_AI_Systems)
 
-#### Semester 2 **(Has Not Started Yet)**
+
+#### Semester 2
 - *Course titles to be announced, Coming Soon*
 
 
